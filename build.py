@@ -2,18 +2,25 @@
 """Rebuild dist/index.html from the DNR shooting-hours PDFs.
 
 Usage:  python build.py [--year 2026]
-Needs:  pdftotext (poppler-utils) on PATH, and `pip install zipcodes`.
+Needs:  pip install pypdf zipcodes
 """
-import argparse, calendar, collections, json, re, subprocess, sys
+import argparse, calendar, collections, json, re, sys
 from pathlib import Path
 
 ROOT = Path(__file__).parent
 MDAYS = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]  # Feb is set from --year in main()
 
+# Chart kinds: key in the page data -> PDF file name part. Both use the same zones/offsets.
+KINDS = {
+    "big": "shooting-hours",            # deer, bear, small game, fall turkey: to 20 min after sunset
+    "bird": "waterfowl-shooting-hours", # waterfowl, spring turkey: to sunset
+}
+
 
 def parse_chart(pdf: Path):
     """Return [month][day] -> [open_min, close_min] (minutes after midnight, Zone A)."""
-    text = subprocess.run(["pdftotext", "-layout", str(pdf), "-"], capture_output=True, text=True, check=True).stdout
+    from pypdf import PdfReader
+    text = "\n".join(p.extract_text() for p in PdfReader(pdf).pages)
     rows = {}
     for line in text.splitlines():
         m = re.match(r"\s*(\d{1,2})\s+(.*)\s+(\d{1,2})\s*$", line)
@@ -23,8 +30,12 @@ def parse_chart(pdf: Path):
     for mi, n in enumerate(MDAYS):
         col = []
         for d in range(1, n + 1):
-            # Row 29 carries a junk Feb 29 cell ("#### 12:20") in non-leap years, so all 12 months are present.
-            present = list(range(12)) if d == 29 else [i for i in range(12) if d <= MDAYS[i]]
+            present = [i for i in range(12) if d <= MDAYS[i]]
+            # Some charts have a junk Feb 29 cell ("#### 12:20") in non-leap years; others leave it blank.
+            if d == 29 and 1 not in present and len(rows[d]) == 2 * len(present) + 2:
+                present = list(range(12))
+            if len(rows[d]) != 2 * len(present):
+                sys.exit(f"{pdf.name}: day {d} has {len(rows[d])} cells, expected {2 * len(present)}")
             i = present.index(mi)
             a, p = rows[d][2 * i], rows[d][2 * i + 1]
             h, mm = map(int, a.split(":")); h2, m2 = map(int, p.split(":"))
@@ -67,8 +78,11 @@ def main():
     a = ap.parse_args()
     MDAYS[1] = 29 if calendar.isleap(a.year) else 28
     data = {
-        "N": parse_chart(ROOT / "data" / f"{a.year}-northern-shooting-hours.pdf"),
-        "S": parse_chart(ROOT / "data" / f"{a.year}-southern-shooting-hours.pdf"),
+        kind: {
+            "N": parse_chart(ROOT / "data" / f"{a.year}-northern-{part}.pdf"),
+            "S": parse_chart(ROOT / "data" / f"{a.year}-southern-{part}.pdf"),
+        }
+        for kind, part in KINDS.items()
     }
     t = (ROOT / "src" / "template.html").read_text(encoding="utf-8")
     t = t.replace("__YEAR__", str(a.year))
