@@ -59,9 +59,17 @@ tr.sel td{background:light-dark(#fff1e6,#33261b);font-weight:600}
 tr.dst td{border-top:2px dashed var(--blazeInk)}
 .fine{font-size:14px;color:var(--mute);margin-top:28px;line-height:1.5}
 .fine a{color:var(--blazeInk)}
+.topbar{position:sticky;top:0;z-index:10;background:var(--night);color:#fff;border-bottom:3px solid var(--blaze)}
+.topbar.on{background:var(--blaze);border-bottom-color:#b33e00}
+.tb-in{max-width:720px;margin:0 auto;padding:8px max(4vw,16px);display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:0 12px}
+#tbmain{font:700 clamp(26px,7.5vw,34px)/1.15 "Barlow Condensed",sans-serif;font-variant-numeric:tabular-nums}
+#tbsub{font-size:14px;font-weight:500;opacity:.92}
 @media(max-width:600px){.zones{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(prefers-reduced-motion:no-preference){.bar .win,.bar .now{transition:left .3s,width .3s}}
 </style></head><body>
+<div class="topbar" id="topbar" role="timer" aria-label="Today's shooting hours countdown" hidden>
+  <div class="tb-in"><b id="tbmain"></b><span id="tbsub"></span></div>
+</div>
 <main class="wrap">
 <h1>Wisconsin shooting hours</h1>
 <p class="sub">__YEAR__ · deer, bear, small game, turkey &amp; waterfowl</p>
@@ -134,15 +142,18 @@ const ZONES=[
  {z:'E',add:16,lon:'91°–92°',N:'Eau Claire, Chippewa Falls, Rice Lake, Menomonie',S:'La Crosse, Prairie du Chien, Alma'},
  {z:'F',add:20,lon:'West of 92°',N:'Hudson, River Falls, Superior, Siren',S:'far western Pepin Co.'}];
 let region='N';
-const KINDS={big:{name:'Deer, bear, small game & fall turkey',rule:'30 min before sunrise to 20 min after sunset'},
- bird:{name:'Waterfowl & spring turkey',rule:'30 min before sunrise to sunset'}};
+const KINDS={big:{name:'Deer, bear, small game & fall turkey',short:'Deer & small game',rule:'30 min before sunrise to 20 min after sunset'},
+ bird:{name:'Waterfowl & spring turkey',short:'Waterfowl & spring turkey',rule:'30 min before sunrise to sunset'}};
 let kind='big';
 const PLACES=__PLACES__;
 const NORTH=new Set(['Pierce','Dunn','Eau Claire','Clark','Marathon','Shawano','Oconto','Door','Burnett','Washburn','Sawyer','Price','Vilas','Oneida','Forest','Florence','Marinette','Langlade','Lincoln','Taylor','Rusk','Barron','Polk','St. Croix','Chippewa','Douglas','Bayfield','Ashland','Iron','Menominee']);
 const $=id=>document.getElementById(id);
 let zone='E';
 try{const s=localStorage.getItem('wiZone');if(s&&ZONES.some(z=>z.z===s))zone=s;const r=localStorage.getItem('wiRegion');if(r==='N'||r==='S')region=r;const k=localStorage.getItem('wiKind');if(k in KINDS)kind=k}catch(e){}
-const chi=()=>{const p=Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone:'America/Chicago',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date()).map(x=>[x.type,x.value]));return{iso:`${p.year}-${p.month}-${p.day}`,min:(+p.hour)*60+(+p.minute)}};
+const chi=()=>{const p=Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone:'America/Chicago',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).formatToParts(new Date()).map(x=>[x.type,x.value]));return{iso:`${p.year}-${p.month}-${p.day}`,min:(+p.hour)*60+(+p.minute),sec:(+p.hour)*3600+(+p.minute)*60+(+p.second)}};
+// Chicago UTC offset in hours at a given instant (-6 CST, -5 CDT), for countdowns that cross a DST change overnight.
+const chiOff=d=>+(new Intl.DateTimeFormat('en-US',{timeZone:'America/Chicago',timeZoneName:'shortOffset'}).formatToParts(d).find(x=>x.type==='timeZoneName').value.replace('GMT','')||0);
+const clock=s=>{const h=Math.floor(s/3600),m=Math.floor(s%3600/60),ss=s%60;return (h?h+':'+String(m).padStart(2,'0'):m)+':'+String(ss).padStart(2,'0')};
 const clampIso=iso=>iso<'__YEAR__-01-01'?'__YEAR__-01-01':iso>'__YEAR__-12-31'?'__YEAR__-12-31':iso;
 const fmt=m=>{let h=Math.floor(m/60),mm=m%60,ap=h>=12?'PM':'AM';h=h%12||12;return `${h}:${String(mm).padStart(2,'0')}`+`<i>${ap}</i>`};
 const plain=m=>fmt(m).replace(/<i>(\w+)<\/i>/,' $1');
@@ -161,7 +172,23 @@ function renderZones(){
   for(const b of document.querySelectorAll('#kinds button'))b.setAttribute('aria-pressed',b.dataset.k===kind);
   $('kindhint').textContent=`Hours run ${KINDS[kind].rule}.`;
 }
+// Sticky top bar: always today's status for the chosen area/zone/hunt type, ticking every second.
+function tick(){
+  const now=chi(),t=get(now.iso),tb=$('topbar');
+  if(!t){tb.hidden=true;return}
+  tb.hidden=false;
+  const [o,c]=t,s=now.sec,where=`${region==='N'?'Northern':'Southern'} Zone ${zone} · ${KINDS[kind].short}`;
+  let main,sub=`Today ${plain(o)} – ${plain(c)} · ${where}`,on=false;
+  if(s<o*60){main=`Opens in ${clock(o*60-s)}`}
+  else if(s<c*60){on=true;main=`Legal · closes in ${clock(c*60-s)}`}
+  else{const n=get(addDays(now.iso,1));
+    if(n){let left=86400-s+n[0]*60;left-=(chiOff(new Date(Date.now()+left*1000))-chiOff(new Date()))*3600;
+      main=`Closed · opens in ${clock(left)}`;sub=`Tomorrow opens ${plain(n[0])} · ${where}`}
+    else{main='Closed for today';sub=`Ended at ${plain(c)} · ${where}`}}
+  tb.classList.toggle('on',on);$('tbmain').textContent=main;$('tbsub').textContent=sub;
+}
 function render(){
+  tick();
   const iso=$('date').value||clampIso(chi().iso);
   const t=get(iso);if(!t)return;
   const [o,c]=t;
@@ -241,7 +268,7 @@ $('date').addEventListener('change',render);
 $('prev').addEventListener('click',()=>{$('date').value=clampIso(addDays($('date').value,-1));render()});
 $('next').addEventListener('click',()=>{$('date').value=clampIso(addDays($('date').value,1));render()});
 $('today').addEventListener('click',()=>{$('date').value=clampIso(chi().iso);render()});
-setInterval(render,30000);
+setInterval(render,30000);setInterval(tick,1000);
 renderZones();render();
 }
 </script>
