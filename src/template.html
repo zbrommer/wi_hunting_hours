@@ -12,7 +12,7 @@
    LAYOUT: one column: zone + date, huge times, day bar, next 14 days list */
 :root{color-scheme:light dark;--bg:light-dark(#f4f2ec,#13201b);--card:light-dark(#fff,#1b2b25);--ink:light-dark(#18211d,#eef1ea);--mute:light-dark(#5c665f,#a3b0a8);--line:light-dark(#d9d6cc,#2c3f37);--blaze:#ff5f00;--blazeInk:light-dark(#c24300,#ff8a3d);--night:light-dark(#2b3a34,#0b1310);--sky:light-dark(#d7e6ef,#3a5566)}
 :root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
-*{box-sizing:border-box;min-width:0}
+*{box-sizing:border-box;min-width:0}[hidden]{display:none!important}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Barlow,system-ui,sans-serif;overflow-x:clip}
 .wrap{max-width:720px;margin:0 auto;padding:20px max(4vw,16px) 48px}
 h1{font:700 clamp(28px,6vw,40px)/1.05 "Barlow Condensed",sans-serif;margin:0 0 4px;text-wrap:balance}
@@ -33,32 +33,38 @@ label{display:block;font-weight:600;font-size:14px;margin-bottom:6px}
 .zones button[aria-pressed=true]{border-color:var(--blaze);background:var(--blaze);color:#fff}
 .zones button[aria-pressed=true] small{color:#fff}
 .zonehint{font-size:14px;color:var(--mute);margin-top:6px}
-.daterow{display:flex;gap:8px;align-items:center}
-input[type=date]{flex:1;font:16px Barlow,sans-serif;min-height:48px;padding:0 12px;border:2px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink)}
 .btn{min-height:48px;min-width:48px;padding:0 14px;border:2px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font:600 16px Barlow,sans-serif;cursor:pointer}
 button:focus-visible,input:focus-visible{outline:3px solid var(--blaze);outline-offset:2px}
 .tag{background:var(--card);border:2px solid var(--line);border-top:10px solid var(--blaze);border-radius:14px;padding:18px 18px 20px}
-.tag .day{font-weight:600;color:var(--mute);margin:0 0 8px}
 .times{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
 .times div span{display:block;font-size:14px;font-weight:600;color:var(--mute)}
 .times b{font:700 clamp(52px,15vw,84px)/1 "Barlow Condensed",sans-serif;white-space:nowrap;letter-spacing:-.01em}
 .times b i{font-style:normal;font-size:.4em;margin-left:4px;color:var(--mute)}
-.status{margin:14px 0 0;font-weight:600;font-size:17px;padding:10px 12px;border-radius:8px;background:light-dark(#f1efe8,#22342d)}
-.status.on{background:var(--blaze);color:#fff}
 .bar{position:relative;height:46px;margin-top:16px;border-radius:8px;background:var(--night);overflow:hidden}
 .bar .win{position:absolute;top:0;bottom:0;background:linear-gradient(90deg,var(--blaze),#ff8a3d 12%,#ff8a3d 88%,var(--blaze))}
 .bar .now{position:absolute;top:-2px;bottom:-2px;width:3px;background:var(--ink);box-shadow:0 0 0 2px var(--card)}
 .ticks{display:flex;justify-content:space-between;font-size:13px;color:var(--mute);margin-top:4px}
 .note{font-size:14px;color:var(--mute);margin-top:10px}
-h2{font:700 24px/1.1 "Barlow Condensed",sans-serif;margin:30px 0 10px}
+h2{font:700 24px/1.1 "Barlow Condensed",sans-serif;margin:26px 0 6px}
 table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
-th,td{padding:10px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
 th{font-size:13px;color:var(--mute);font-weight:600}
 th:first-child,td:first-child{text-align:left}
 tr.sel td{background:light-dark(#fff1e6,#33261b);font-weight:600}
 tr.dst td{border-top:2px dashed var(--blazeInk)}
 .fine{font-size:14px;color:var(--mute);margin-top:28px;line-height:1.5}
 .fine a{color:var(--blazeInk)}
+.spot{width:100%;display:flex;justify-content:space-between;align-items:center;gap:12px;text-align:left;min-height:56px;padding:8px 14px;margin:0 0 14px;border:2px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);font:16px/1.3 Barlow,sans-serif;cursor:pointer}
+.spot small{display:block;font-size:13px;color:var(--mute);font-weight:500}.spot b{font-weight:600}
+.spot .chg{color:var(--blazeInk);font-weight:600;white-space:nowrap}
+.regions button small{display:block;font:500 13px/1.2 Barlow,sans-serif;opacity:.75;margin-top:2px}
+.done{width:100%}
+.dayrow{display:flex;align-items:center;gap:8px;margin:0 0 12px}
+.nav{font-size:24px;line-height:1}
+.dpick{position:relative;flex:1;min-height:48px;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:17px;border-radius:10px;text-align:center}
+.dpick input{position:absolute;inset:0;width:100%;height:100%;opacity:0;border:0;cursor:pointer}
+.dpick:focus-within{outline:3px solid var(--blaze);outline-offset:2px}
+.linkbtn{background:none;border:0;padding:0;margin-left:6px;color:var(--blazeInk);font:600 14px Barlow,sans-serif;text-decoration:underline;cursor:pointer}
 .topbar{position:sticky;top:0;z-index:10;background:var(--night);color:#fff;border-bottom:3px solid var(--blaze)}
 .topbar.on{background:var(--blaze);border-bottom-color:#b33e00}
 .tb-in{max-width:720px;margin:0 auto;padding:8px max(4vw,16px);display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:0 12px}
@@ -74,18 +80,22 @@ tr.dst td{border-top:2px dashed var(--blazeInk)}
 <h1>Wisconsin shooting hours</h1>
 <p class="sub">__YEAR__ · deer, bear, small game, turkey &amp; waterfowl</p>
 
-<div class="controls">
+<button type="button" class="spot" id="spotbtn" aria-expanded="false" aria-controls="settings">
+  <span><small>Your spot</small><b id="spotsum"></b></span><span class="chg" id="spotchg">Change</span>
+</button>
+
+<div class="controls" id="settings" hidden>
   <div>
     <label id="kl">Hunting for</label>
     <div class="regions" id="kinds" role="group" aria-labelledby="kl">
-      <button type="button" data-k="big">Deer, bear, small game &amp; fall turkey</button><button type="button" data-k="bird">Waterfowl &amp; spring turkey</button>
+      <button type="button" data-k="big">Deer &amp; small game<small>also bear, fall turkey</small></button><button type="button" data-k="bird">Waterfowl<small>also spring turkey</small></button>
     </div>
     <div class="zonehint" id="kindhint"></div>
   </div>
   <div class="find">
     <label for="q">Where are you hunting?</label>
     <div class="qrow">
-      <input id="q" type="search" autocomplete="off" placeholder="Type a city or town, or lat, long" aria-describedby="found">
+      <input id="q" type="search" autocomplete="off" placeholder="Town, or lat, long" aria-describedby="found">
       <button type="button" class="btn" id="loc">Use my location</button>
     </div>
     <div class="sugg" id="sugg" role="listbox" aria-label="Matching places"></div>
@@ -96,34 +106,29 @@ tr.dst td{border-top:2px dashed var(--blazeInk)}
     <div class="regions" id="regions" role="group" aria-labelledby="rl">
       <button type="button" data-r="N">Northern</button><button type="button" data-r="S">Southern</button>
     </div>
-    <div class="zonehint">Northern = Pierce, Dunn, Eau Claire, Clark, Marathon, Shawano, Oconto and Door counties and every county north of them. Southern = the rest of the state.</div>
+    <div class="zonehint">Northern: Pierce, Dunn, Eau Claire, Clark, Marathon, Shawano, Oconto, Door and all counties north of them.</div>
   </div>
   <div>
-    <label id="zl">Shooting-hours zone</label>
+    <label id="zl">Zone</label>
     <div class="zones" id="zones" role="group" aria-labelledby="zl"></div>
     <div class="zonehint" id="zonehint"></div>
   </div>
-  <div>
-    <label for="date">Date</label>
-    <div class="daterow">
-      <button class="btn" id="prev" aria-label="Previous day">‹</button>
-      <input type="date" id="date" min="__YEAR__-01-01" max="__YEAR__-12-31">
-      <button class="btn" id="next" aria-label="Next day">›</button>
-      <button class="btn" id="today">Today</button>
-    </div>
-  </div>
+  <button type="button" class="btn done" id="done">Done</button>
 </div>
 
 <section class="tag" aria-live="polite">
-  <p class="day" id="dayname"></p>
+  <div class="dayrow">
+    <button class="btn nav" id="prev" aria-label="Previous day">‹</button>
+    <div class="dpick"><span id="dayname"></span><input type="date" id="date" min="__YEAR__-01-01" max="__YEAR__-12-31" aria-label="Pick a date"></div>
+    <button class="btn nav" id="next" aria-label="Next day">›</button>
+  </div>
   <div class="times">
     <div><span>Opens</span><b id="open"></b></div>
     <div><span>Closes</span><b id="close"></b></div>
   </div>
   <div class="bar" id="bar"><div class="win" id="win"></div><div class="now" id="now" hidden></div></div>
   <div class="ticks"><span>4a</span><span>7a</span><span>10a</span><span>1p</span><span>4p</span><span>7p</span><span>10p</span></div>
-  <p class="status" id="status"></p>
-  <p class="note" id="len"></p>
+  <p class="note"><span id="len"></span> <button type="button" class="linkbtn" id="today" hidden>Back to today</button></p>
 </section>
 
 <h2>Next 14 days</h2>
@@ -148,8 +153,8 @@ let kind='big';
 const PLACES=__PLACES__;
 const NORTH=new Set(['Pierce','Dunn','Eau Claire','Clark','Marathon','Shawano','Oconto','Door','Burnett','Washburn','Sawyer','Price','Vilas','Oneida','Forest','Florence','Marinette','Langlade','Lincoln','Taylor','Rusk','Barron','Polk','St. Croix','Chippewa','Douglas','Bayfield','Ashland','Iron','Menominee']);
 const $=id=>document.getElementById(id);
-let zone='E';
-try{const s=localStorage.getItem('wiZone');if(s&&ZONES.some(z=>z.z===s))zone=s;const r=localStorage.getItem('wiRegion');if(r==='N'||r==='S')region=r;const k=localStorage.getItem('wiKind');if(k in KINDS)kind=k}catch(e){}
+let zone='E',place='',saved=false;
+try{const s=localStorage.getItem('wiZone');if(s&&ZONES.some(z=>z.z===s)){zone=s;saved=true}place=localStorage.getItem('wiPlace')||'';const r=localStorage.getItem('wiRegion');if(r==='N'||r==='S')region=r;const k=localStorage.getItem('wiKind');if(k in KINDS)kind=k}catch(e){}
 const chi=()=>{const p=Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone:'America/Chicago',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).formatToParts(new Date()).map(x=>[x.type,x.value]));return{iso:`${p.year}-${p.month}-${p.day}`,min:(+p.hour)*60+(+p.minute),sec:(+p.hour)*3600+(+p.minute)*60+(+p.second)}};
 // Chicago UTC offset in hours at a given instant (-6 CST, -5 CDT), for countdowns that cross a DST change overnight.
 const chiOff=d=>+(new Intl.DateTimeFormat('en-US',{timeZone:'America/Chicago',timeZoneName:'shortOffset'}).formatToParts(d).find(x=>x.type==='timeZoneName').value.replace('GMT','')||0);
@@ -160,7 +165,7 @@ const plain=m=>fmt(m).replace(/<i>(\w+)<\/i>/,' $1');
 const hm=m=>{const h=Math.floor(m/60),mm=m%60;return (h?h+' hr ':'')+(mm||!h?mm+' min':'')};
 const get=iso=>{const [y,mo,d]=iso.split('-').map(Number);const r=D[kind][region][mo-1]?.[d-1];if(!r)return null;const add=ZONES.find(z=>z.z===zone).add;return [r[0]+add,r[1]+add]};
 const addDays=(iso,n)=>{const t=new Date(iso+'T12:00:00Z');t.setUTCDate(t.getUTCDate()+n);return t.toISOString().slice(0,10)};
-const dname=iso=>new Date(iso+'T12:00:00Z').toLocaleDateString('en-US',{timeZone:'UTC',weekday:'long',month:'long',day:'numeric',year:'numeric'});
+const setPlace=p=>{place=p;try{p?localStorage.setItem('wiPlace',p):localStorage.removeItem('wiPlace')}catch(e){}};
 const sname=iso=>new Date(iso+'T12:00:00Z').toLocaleDateString('en-US',{timeZone:'UTC',weekday:'short',month:'short',day:'numeric'});
 $('date').value=clampIso(chi().iso);
 
@@ -171,7 +176,9 @@ function renderZones(){
   for(const b of document.querySelectorAll('#regions button'))b.setAttribute('aria-pressed',b.dataset.r===region);
   for(const b of document.querySelectorAll('#kinds button'))b.setAttribute('aria-pressed',b.dataset.k===kind);
   $('kindhint').textContent=`Hours run ${KINDS[kind].rule}.`;
+  $('spotsum').textContent=(place?place+' · ':'')+`${region==='N'?'Northern':'Southern'} · Zone ${zone} · ${KINDS[kind].short}`;
 }
+function setOpen(o){$('settings').hidden=!o;$('spotbtn').setAttribute('aria-expanded',o);$('spotchg').textContent=o?'Close':'Change'}
 // Sticky top bar: always today's status for the chosen area/zone/hunt type, ticking every second.
 function tick(){
   const now=chi(),t=get(now.iso),tb=$('topbar');
@@ -192,17 +199,12 @@ function render(){
   const iso=$('date').value||clampIso(chi().iso);
   const t=get(iso);if(!t)return;
   const [o,c]=t;
-  $('dayname').textContent=dname(iso)+' · '+(region==='N'?'Northern':'Southern')+' Zone '+zone+' · '+KINDS[kind].name;
   $('open').innerHTML=fmt(o);$('close').innerHTML=fmt(c);
   const S=240,E=1320,pct=m=>Math.max(0,Math.min(100,(m-S)/(E-S)*100));
   $('win').style.left=pct(o)+'%';$('win').style.width=(pct(c)-pct(o))+'%';
-  const now=chi(),isToday=now.iso===iso,n=$('now'),st=$('status');
+  const now=chi(),isToday=now.iso===iso,n=$('now');
+  $('dayname').textContent=(isToday?'Today · ':'')+sname(iso);$('today').hidden=isToday;
   n.hidden=!isToday;if(isToday)n.style.left=pct(now.min)+'%';
-  st.classList.remove('on');
-  if(!isToday){st.textContent=`Legal window: ${plain(o)} – ${plain(c)}`}
-  else if(now.min<o){st.textContent=`Not yet legal — opens in ${hm(o-now.min)}`}
-  else if(now.min<c){st.classList.add('on');st.textContent=`Legal to shoot now — closes in ${hm(c-now.min)}`}
-  else{st.textContent=`Closed for today — ended at ${plain(c)}`}
   $('len').textContent=`${hm(c-o)} of legal shooting time.`;
   let rows='',prev=get(addDays(iso,-1));
   for(let i=0;i<14;i++){const d=addDays(iso,i),r=get(d);if(!r)break;
@@ -210,7 +212,7 @@ function render(){
     rows+=`<tr class="${i===0?'sel':''} ${dst&&i?'dst':''}"><td>${sname(d)}${dst&&i?' · clocks change':''}</td><td>${plain(r[0])}</td><td>${plain(r[1])}</td></tr>`;prev=r}
   $('rows').innerHTML=rows;
 }
-$('zones').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;zone=b.dataset.z;$('found').innerHTML='';try{localStorage.setItem('wiZone',zone)}catch(e){}renderZones();render()});
+$('zones').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;zone=b.dataset.z;$('found').innerHTML='';setPlace('');try{localStorage.setItem('wiZone',zone)}catch(e){}renderZones();render()});
 const norm=s=>s.toLowerCase().replace(/\bst\.?\s+/g,'saint ').replace(/\bmt\.?\s+/g,'mount ').replace(/[^a-z]/g,'');
 const NP=PLACES.map(p=>norm(p[0]));
 const zoneFor=lon=>lon<88?'A':lon<89?'B':lon<90?'C':lon<91?'D':lon<92?'E':'F';
@@ -218,7 +220,7 @@ const dist2=(p,lat,lon)=>(p[2]-lat)**2+((p[3]-lon)*0.7)**2;
 const nearest=(lat,lon)=>{let best=0,bd=1e9;PLACES.forEach((p,i)=>{const d=dist2(p,lat,lon);if(d<bd){bd=d;best=i}});return best};
 const inWI=(lat,lon)=>lat>=42.4&&lat<=47.1&&lon>=86.7&&lon<=92.95;
 function choose(name,county,lat,lon,exact){
-  region=NORTH.has(county)?'N':'S';zone=zoneFor(lon);
+  region=NORTH.has(county)?'N':'S';zone=zoneFor(lon);setPlace(name.replace(/^Your location, near /,'Near '));
   try{localStorage.setItem('wiZone',zone);localStorage.setItem('wiRegion',region)}catch(e){}
   const edge=Math.abs(lon-Math.round(lon))<0.06&&lon>87.5&&lon<92.5;
   // Area comes from the nearest town's county; flag spots where nearby towns fall in different areas.
@@ -262,12 +264,16 @@ $('sugg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)
   if(b.dataset.coord){const [lat,lon,i]=b.dataset.coord.split(',').map(Number);choose(`${lat.toFixed(4)}, -${lon.toFixed(4)}`,PLACES[i][1],lat,lon,true)}
   else{const p=PLACES[+b.dataset.i];$('q').value=p[0];choose(p[0],p[1],p[2],p[3],false)}
   $('q').blur()});
-$('regions').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;region=b.dataset.r;$('found').innerHTML='';try{localStorage.setItem('wiRegion',region)}catch(e){}renderZones();render()});
+$('regions').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;region=b.dataset.r;$('found').innerHTML='';setPlace('');try{localStorage.setItem('wiRegion',region)}catch(e){}renderZones();render()});
 $('kinds').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;kind=b.dataset.k;try{localStorage.setItem('wiKind',kind)}catch(e){}renderZones();render()});
 $('date').addEventListener('change',render);
 $('prev').addEventListener('click',()=>{$('date').value=clampIso(addDays($('date').value,-1));render()});
 $('next').addEventListener('click',()=>{$('date').value=clampIso(addDays($('date').value,1));render()});
 $('today').addEventListener('click',()=>{$('date').value=clampIso(chi().iso);render()});
+$('spotbtn').addEventListener('click',()=>setOpen($('settings').hidden));
+$('done').addEventListener('click',()=>{setOpen(false);$('spotbtn').scrollIntoView({block:'nearest'})});
+$('date').addEventListener('click',e=>{try{e.target.showPicker()}catch(_){}});
+setOpen(!saved);
 setInterval(render,30000);setInterval(tick,1000);
 renderZones();render();
 }
