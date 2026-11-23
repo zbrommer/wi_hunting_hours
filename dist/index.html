@@ -1,6 +1,10 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#13201b">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<meta name="apple-mobile-web-app-title" content="WI Hours">
 <title>WI Shooting Hours</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
@@ -65,6 +69,12 @@ tr.dst td{border-top:2px dashed var(--blazeInk)}
 .dpick input{position:absolute;inset:0;width:100%;height:100%;opacity:0;border:0;cursor:pointer}
 .dpick:focus-within{outline:3px solid var(--blaze);outline-offset:2px}
 .linkbtn{background:none;border:0;padding:0;margin-left:6px;color:var(--blazeInk);font:600 14px Barlow,sans-serif;text-decoration:underline;cursor:pointer}
+#help{max-width:min(520px,calc(100vw - 32px));border:0;border-top:10px solid var(--blaze);border-radius:16px;padding:20px;background:var(--card);color:var(--ink)}
+#help::backdrop{background:rgba(0,0,0,.6)}
+#help h2{margin:0 0 12px}
+#help ol{margin:0 0 12px;padding-left:24px;font-size:18px;line-height:1.45}#help li{margin:0 0 10px}
+#help .helpnote{font-size:14px;color:var(--mute);margin:0 0 14px}#help .helpnote:empty{display:none}
+.ico{display:inline-block;vertical-align:-4px;margin:0 2px}
 .topbar{position:sticky;top:0;z-index:10;background:var(--night);color:#fff;border-bottom:3px solid var(--blaze)}
 .topbar.on{background:var(--blaze);border-bottom-color:#b33e00}
 .tb-in{max-width:720px;margin:0 auto;padding:8px max(4vw,16px);display:flex;align-items:center;gap:12px}
@@ -82,6 +92,7 @@ tr.dst td{border-top:2px dashed var(--blazeInk)}
   <div class="tb-in"><div class="tb-text"><b id="tbmain"></b><span id="tbsub"></span><span id="tbnote" hidden></span></div>
   <button type="button" class="sw" id="alertsw" role="switch" aria-checked="false" aria-label="Notify me when the countdown hits zero"><span class="knob"></span><span id="swlbl">Notify me</span></button></div>
 </div>
+<dialog id="help" aria-labelledby="helpt"><h2 id="helpt"></h2><ol id="helpsteps"></ol><p class="helpnote" id="helpnote"></p><button type="button" class="btn done" id="helpok">Got it</button></dialog>
 <main class="wrap">
 <h1>Wisconsin shooting hours</h1>
 <p class="sub">2026 · deer, bear, small game, turkey &amp; waterfowl</p>
@@ -197,15 +208,30 @@ function notify(title,body){
   (sw?sw.getRegistration():Promise.resolve()).then(r=>r?r.showNotification(title,o):new Notification(title,o)).catch(()=>{try{new Notification(title,o)}catch(e){}});
 }
 function setAlert(on){alertOn=on;$('alertsw').setAttribute('aria-checked',on);$('swlbl').textContent=on?'Alert on':'Notify me';try{localStorage.setItem('wiAlert',on?'1':'0')}catch(e){}}
+const isIOS=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+const installed=navigator.standalone===true||matchMedia('(display-mode: standalone)').matches;
+const SHARE='<svg class="ico" width="20" height="22" viewBox="0 0 20 22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="Share"><path d="M10 14V2M6 6l4-4 4 4"/><path d="M6 9H3v11h14V9h-3"/></svg>';
+// Step-by-step help when alerts can't be turned on (web pages can't open the phone's Settings app themselves).
+const HELP={
+ install:['Add WI Hours to your Home Screen',[`Tap the Share button ${SHARE} (bottom of Safari, or by the address bar in Chrome).`,'Scroll down, tap <b>Add to Home Screen</b>, then <b>Add</b>.','Open <b>WI Hours</b> from your Home Screen and tap <b>Notify me</b>.'],
+   'iPhones only allow website alerts from Home Screen apps (iOS 16.4 or later). You’ll set your area and zone once more in the app.'],
+ iosBlocked:['Turn on notifications for WI Hours',['Open the <b>Settings</b> app.','Tap <b>Notifications</b>, then <b>WI Hours</b>.','Turn on <b>Allow Notifications</b>, come back, and tap <b>Notify me</b> again.'],
+   'iPhones don’t let websites open Settings for you.'],
+ oldIOS:['Update your iPhone',['Alerts need iOS 16.4 or later. Open <b>Settings</b> → <b>General</b> → <b>Software Update</b>.'],''],
+ blocked:['Allow notifications for this site',['Tap the icon at the left of the address bar (a lock or sliders).','Tap <b>Permissions</b> or <b>Site settings</b> → <b>Notifications</b> → <b>Allow</b>.','Reload the page and tap <b>Notify me</b> again.'],
+   'Installed as an app? Long-press its icon → App info → Notifications.']};
+function help(k){const [title,steps,nt]=HELP[k],d=$('help');
+  if(!d.showModal){note(title);return}
+  $('helpt').textContent=title;$('helpsteps').innerHTML=steps.map(s=>`<li>${s}</li>`).join('');$('helpnote').textContent=nt;d.showModal()}
 async function toggleAlert(){
   if(alertOn){setAlert(false);note('Alert off.');return}
   if(!('Notification' in window)){
-    if(/iPhone|iPad/.test(navigator.userAgent)){note('On iPhone, add this page to your Home Screen first, then turn this on.');return}
+    if(isIOS){help(installed?'oldIOS':'install');return}
     if(!navigator.vibrate){note('This browser can’t show alerts.');return}
     setAlert(true);note('Alert on (vibrate only). Keep this page open.');return}
   let p=Notification.permission;
   if(p==='default'){try{p=await Notification.requestPermission()}catch(e){}}
-  if(p!=='granted'){note('Notifications are blocked. Allow them for this site in your browser settings.');return}
+  if(p!=='granted'){help(isIOS?'iosBlocked':'blocked');return}
   setAlert(true);note('Alert on. Keep this page open — the screen can lock.');
 }
 function tick(){
@@ -310,6 +336,7 @@ $('date').addEventListener('click',e=>{try{e.target.showPicker()}catch(_){}});
 setOpen(!saved);
 setAlert(alertOn&&(!('Notification' in window)||Notification.permission==='granted'));
 $('alertsw').addEventListener('click',toggleAlert);
+$('helpok').addEventListener('click',()=>$('help').close());
 if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
 setInterval(render,30000);setInterval(tick,1000);
 renderZones();render();

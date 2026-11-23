@@ -4,10 +4,11 @@
 Usage:  python build.py [--year 2026]
 Needs:  pip install pypdf zipcodes
 """
-import argparse, calendar, collections, json, re, sys
+import argparse, calendar, collections, json, re, shutil, sys
 from pathlib import Path
 
 ROOT = Path(__file__).parent
+STATIC = ["sw.js", "manifest.webmanifest", "icons/icon-180.png", "icons/icon-192.png", "icons/icon-512.png"]
 MDAYS = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]  # Feb is set from --year in main()
 
 # Chart kinds: key in the page data -> PDF file name part. Both use the same zones/offsets.
@@ -90,8 +91,10 @@ def main():
     t = t.replace("__PLACES__", json.dumps(build_places(), separators=(",", ":")))
     (ROOT / "dist").mkdir(exist_ok=True)
     (ROOT / "dist" / "index.html").write_text(t, encoding="utf-8")
-    (ROOT / "dist" / "sw.js").write_text((ROOT / "src" / "sw.js").read_text(encoding="utf-8"), encoding="utf-8")
-    print("wrote dist/index.html and dist/sw.js")
+    for f in STATIC:  # service worker, web app manifest, icons: copied as-is
+        (ROOT / "dist" / f).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(ROOT / "src" / f, ROOT / "dist" / f)
+    print("wrote dist/index.html +", ", ".join(STATIC))
 
 
 if __name__ == "__main__":
