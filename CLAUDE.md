@@ -24,9 +24,9 @@ The DNR publishes these as tiny PDF charts that are hard to read; this page make
 - The parser sanity-checks that only the two DST days jump more than 3 minutes (it prints those two expected jumps per chart).
 
 ## Page features
-Hunt-type toggle (deer/bear/small game/fall turkey vs waterfowl/spring turkey), area toggle, zone buttons (with example towns per area), town/coordinate search, date picker with prev/next/today, big open/close times, a day bar with the legal window and a "now" marker, a live "legal now / opens in / closes in" status (uses America/Chicago time), and a 14-day table that marks DST changes. Hunt type, area and zone are remembered in localStorage. Footer: "Not an official Wisconsin DNR tool" plus a link to the DNR regs page.
+Hunt-type toggle (deer/bear/small game/fall turkey vs waterfowl/spring turkey), area toggle, zone buttons (with example towns per area), town/coordinate search, a "Use my location" button (browser geolocation: exact longitude → zone, nearest town's county → area, with a warning within ~0.28° of a town in the other area), date picker with prev/next/today, big open/close times, a day bar with the legal window and a "now" marker, a live "legal now / opens in / closes in" status (uses America/Chicago time), and a 14-day table that marks DST changes. Hunt type, area and zone are remembered in localStorage. Footer: "Not an official Wisconsin DNR tool" plus a link to the DNR regs page.
 
 ## Status / next steps
 - Live on GitHub Pages. Maybe add a custom domain later (needs `dist/CNAME` + DNS).
 - Each year: drop the four new DNR PDFs into `data/` with the names above, and run `python build.py --year {year}`. The year text in the template is a `__YEAR__` placeholder filled in by the build. Also update the DST dates noted above.
-- Ideas: multi-year support, PWA/offline (useful at camp with no signal), use device geolocation now that it's self-hosted, a more precise town gazetteer than ZIP centroids.
+- Ideas: multi-year support, PWA/offline (useful at camp with no signal), a more precise town gazetteer than ZIP centroids.
