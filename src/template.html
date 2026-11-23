@@ -67,14 +67,20 @@ tr.dst td{border-top:2px dashed var(--blazeInk)}
 .linkbtn{background:none;border:0;padding:0;margin-left:6px;color:var(--blazeInk);font:600 14px Barlow,sans-serif;text-decoration:underline;cursor:pointer}
 .topbar{position:sticky;top:0;z-index:10;background:var(--night);color:#fff;border-bottom:3px solid var(--blaze)}
 .topbar.on{background:var(--blaze);border-bottom-color:#b33e00}
-.tb-in{max-width:720px;margin:0 auto;padding:8px max(4vw,16px);display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:0 12px}
-#tbmain{font:700 clamp(26px,7.5vw,34px)/1.15 "Barlow Condensed",sans-serif;font-variant-numeric:tabular-nums}
-#tbsub{font-size:14px;font-weight:500;opacity:.92}
+.tb-in{max-width:720px;margin:0 auto;padding:8px max(4vw,16px);display:flex;align-items:center;gap:12px}
+.tb-text{flex:1}
+#tbmain{display:block;font:700 clamp(26px,7.5vw,34px)/1.15 "Barlow Condensed",sans-serif;font-variant-numeric:tabular-nums}
+#tbsub,#tbnote{display:block;font-size:14px;font-weight:500;opacity:.92}#tbnote{font-weight:600;opacity:1}
+.sw{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:64px;min-height:56px;padding:6px 8px;border:2px solid rgba(255,255,255,.4);border-radius:12px;background:rgba(255,255,255,.1);color:#fff;font:600 13px/1.1 Barlow,sans-serif;cursor:pointer;white-space:nowrap}
+.sw .knob{position:relative;width:40px;height:24px;border-radius:999px;background:rgba(255,255,255,.35)}
+.sw .knob::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left .2s}
+.sw[aria-checked=true] .knob{background:#fff}.sw[aria-checked=true] .knob::after{left:19px;background:var(--night)}
 @media(max-width:600px){.zones{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(prefers-reduced-motion:no-preference){.bar .win,.bar .now{transition:left .3s,width .3s}}
 </style></head><body>
 <div class="topbar" id="topbar" role="timer" aria-label="Today's shooting hours countdown" hidden>
-  <div class="tb-in"><b id="tbmain"></b><span id="tbsub"></span></div>
+  <div class="tb-in"><div class="tb-text"><b id="tbmain"></b><span id="tbsub"></span><span id="tbnote" hidden></span></div>
+  <button type="button" class="sw" id="alertsw" role="switch" aria-checked="false" aria-label="Notify me when the countdown hits zero"><span class="knob"></span><span id="swlbl">Notify me</span></button></div>
 </div>
 <main class="wrap">
 <h1>Wisconsin shooting hours</h1>
@@ -153,8 +159,8 @@ let kind='big';
 const PLACES=__PLACES__;
 const NORTH=new Set(['Pierce','Dunn','Eau Claire','Clark','Marathon','Shawano','Oconto','Door','Burnett','Washburn','Sawyer','Price','Vilas','Oneida','Forest','Florence','Marinette','Langlade','Lincoln','Taylor','Rusk','Barron','Polk','St. Croix','Chippewa','Douglas','Bayfield','Ashland','Iron','Menominee']);
 const $=id=>document.getElementById(id);
-let zone='E',place='',saved=false;
-try{const s=localStorage.getItem('wiZone');if(s&&ZONES.some(z=>z.z===s)){zone=s;saved=true}place=localStorage.getItem('wiPlace')||'';const r=localStorage.getItem('wiRegion');if(r==='N'||r==='S')region=r;const k=localStorage.getItem('wiKind');if(k in KINDS)kind=k}catch(e){}
+let zone='E',place='',saved=false,alertOn=false;
+try{const s=localStorage.getItem('wiZone');if(s&&ZONES.some(z=>z.z===s)){zone=s;saved=true}place=localStorage.getItem('wiPlace')||'';alertOn=localStorage.getItem('wiAlert')==='1';const r=localStorage.getItem('wiRegion');if(r==='N'||r==='S')region=r;const k=localStorage.getItem('wiKind');if(k in KINDS)kind=k}catch(e){}
 const chi=()=>{const p=Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone:'America/Chicago',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).formatToParts(new Date()).map(x=>[x.type,x.value]));return{iso:`${p.year}-${p.month}-${p.day}`,min:(+p.hour)*60+(+p.minute),sec:(+p.hour)*3600+(+p.minute)*60+(+p.second)}};
 // Chicago UTC offset in hours at a given instant (-6 CST, -5 CDT), for countdowns that cross a DST change overnight.
 const chiOff=d=>+(new Intl.DateTimeFormat('en-US',{timeZone:'America/Chicago',timeZoneName:'shortOffset'}).formatToParts(d).find(x=>x.type==='timeZoneName').value.replace('GMT','')||0);
@@ -180,6 +186,28 @@ function renderZones(){
 }
 function setOpen(o){$('settings').hidden=!o;$('spotbtn').setAttribute('aria-expanded',o);$('spotchg').textContent=o?'Close':'Change'}
 // Sticky top bar: always today's status for the chosen area/zone/hunt type, ticking every second.
+// Optional alert when the countdown hits zero (legal light, end of hours). Static site, so it only works while the page is open.
+let last=null;
+function note(msg){const n=$('tbnote');n.textContent=msg;n.hidden=false;clearTimeout(note.t);note.t=setTimeout(()=>n.hidden=true,8000)}
+function notify(title,body){
+  try{navigator.vibrate?.([400,200,400,200,800])}catch(e){}
+  if(!('Notification' in window)||Notification.permission!=='granted')return;
+  const o={body,tag:'wi-hours',renotify:true};
+  const sw=navigator.serviceWorker;
+  (sw?sw.getRegistration():Promise.resolve()).then(r=>r?r.showNotification(title,o):new Notification(title,o)).catch(()=>{try{new Notification(title,o)}catch(e){}});
+}
+function setAlert(on){alertOn=on;$('alertsw').setAttribute('aria-checked',on);$('swlbl').textContent=on?'Alert on':'Notify me';try{localStorage.setItem('wiAlert',on?'1':'0')}catch(e){}}
+async function toggleAlert(){
+  if(alertOn){setAlert(false);note('Alert off.');return}
+  if(!('Notification' in window)){
+    if(/iPhone|iPad/.test(navigator.userAgent)){note('On iPhone, add this page to your Home Screen first, then turn this on.');return}
+    if(!navigator.vibrate){note('This browser can’t show alerts.');return}
+    setAlert(true);note('Alert on (vibrate only). Keep this page open.');return}
+  let p=Notification.permission;
+  if(p==='default'){try{p=await Notification.requestPermission()}catch(e){}}
+  if(p!=='granted'){note('Notifications are blocked. Allow them for this site in your browser settings.');return}
+  setAlert(true);note('Alert on. Keep this page open — the screen can lock.');
+}
 function tick(){
   const now=chi(),t=get(now.iso),tb=$('topbar');
   if(!t){tb.hidden=true;return}
@@ -193,6 +221,12 @@ function tick(){
       main=`Closed · opens in ${clock(left)}`;sub=`Tomorrow opens ${plain(n[0])} · ${where}`}
     else{main='Closed for today';sub=`Ended at ${plain(c)} · ${where}`}}
   tb.classList.toggle('on',on);$('tbmain').textContent=main;$('tbsub').textContent=sub;
+  const phase=s<o*60?0:s<c*60?1:2,key=now.iso+kind+region+zone;
+  if(alertOn&&last&&last.key===key&&phase>last.phase){
+    const at=(phase===1?o:c)*60;
+    if(s-at<600){phase===1?notify('Legal shooting light',`${where}. Closes ${plain(c)}.`)
+                           :notify('Shooting hours have ended',`${where}. Ended ${plain(c)}.`)}}
+  last={key,phase};
 }
 function render(){
   tick();
@@ -274,6 +308,9 @@ $('spotbtn').addEventListener('click',()=>setOpen($('settings').hidden));
 $('done').addEventListener('click',()=>{setOpen(false);$('spotbtn').scrollIntoView({block:'nearest'})});
 $('date').addEventListener('click',e=>{try{e.target.showPicker()}catch(_){}});
 setOpen(!saved);
+setAlert(alertOn&&(!('Notification' in window)||Notification.permission==='granted'));
+$('alertsw').addEventListener('click',toggleAlert);
+if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
 setInterval(render,30000);setInterval(tick,1000);
 renderZones();render();
 }

@@ -90,7 +90,8 @@ def main():
     t = t.replace("__PLACES__", json.dumps(build_places(), separators=(",", ":")))
     (ROOT / "dist").mkdir(exist_ok=True)
     (ROOT / "dist" / "index.html").write_text(t, encoding="utf-8")
-    print("wrote dist/index.html")
+    (ROOT / "dist" / "sw.js").write_text((ROOT / "src" / "sw.js").read_text(encoding="utf-8"), encoding="utf-8")
+    print("wrote dist/index.html and dist/sw.js")
 
 
 if __name__ == "__main__":
