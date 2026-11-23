@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WI Shooting Hours</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE: plain, field-ready, read at a glance in a cold stand before dawn
+   IDEA: a blaze-orange hunter's tag / regulation card
+   PICTURE: big open/close times over a day bar showing the legal window and "now"
+   COLOUR and TYPE: dark spruce ground, blaze orange accent, Barlow Condensed numerals
+   LAYOUT: one column: zone + date, huge times, day bar, next 14 days list */
+:root{color-scheme:light dark;--bg:light-dark(#f4f2ec,#13201b);--card:light-dark(#fff,#1b2b25);--ink:light-dark(#18211d,#eef1ea);--mute:light-dark(#5c665f,#a3b0a8);--line:light-dark(#d9d6cc,#2c3f37);--blaze:#ff5f00;--blazeInk:light-dark(#c24300,#ff8a3d);--night:light-dark(#2b3a34,#0b1310);--sky:light-dark(#d7e6ef,#3a5566)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Barlow,system-ui,sans-serif;overflow-x:clip}
+.wrap{max-width:720px;margin:0 auto;padding:20px max(4vw,16px) 48px}
+h1{font:700 clamp(28px,6vw,40px)/1.05 "Barlow Condensed",sans-serif;margin:0 0 4px;text-wrap:balance}
+.sub{color:var(--mute);margin:0 0 18px;font-size:15px}
+label{display:block;font-weight:600;font-size:14px;margin-bottom:6px}
+.controls{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;margin-bottom:18px}
+.zones{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
+.zones button{min-height:52px;border:2px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;font:700 20px/1 "Barlow Condensed",sans-serif;cursor:pointer}
+.zones button small{display:block;font:500 12px/1.2 Barlow,sans-serif;color:var(--mute);margin-top:3px}
+.regions{display:grid;grid-template-columns:1fr 1fr;gap:6px}.regions button{min-height:48px;border:2px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;font:600 17px Barlow,sans-serif;cursor:pointer}.regions button[aria-pressed=true]{border-color:var(--ink);background:var(--ink);color:var(--bg)}
+.find{position:relative}
+#q{width:100%;font:16px Barlow,sans-serif;min-height:52px;padding:0 14px;border:2px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink)}
+.sugg{display:grid;gap:4px;margin-top:6px}.sugg:empty{display:none}
+.sugg button{text-align:left;min-height:46px;padding:6px 12px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font:16px Barlow,sans-serif;cursor:pointer;display:flex;justify-content:space-between;gap:10px}
+.sugg button span{color:var(--mute);font-size:14px;white-space:nowrap}
+.found{font-size:15px;margin-top:8px}.found:empty{display:none}.found b{color:var(--blazeInk)}.found .warn{display:block;color:var(--mute);font-size:14px;margin-top:2px}
+.zones button[aria-pressed=true]{border-color:var(--blaze);background:var(--blaze);color:#fff}
+.zones button[aria-pressed=true] small{color:#fff}
+.zonehint{font-size:14px;color:var(--mute);margin-top:6px}
+.daterow{display:flex;gap:8px;align-items:center}
+input[type=date]{flex:1;font:16px Barlow,sans-serif;min-height:48px;padding:0 12px;border:2px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink)}
+.btn{min-height:48px;min-width:48px;padding:0 14px;border:2px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font:600 16px Barlow,sans-serif;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:3px solid var(--blaze);outline-offset:2px}
+.tag{background:var(--card);border:2px solid var(--line);border-top:10px solid var(--blaze);border-radius:14px;padding:18px 18px 20px}
+.tag .day{font-weight:600;color:var(--mute);margin:0 0 8px}
+.times{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+.times div span{display:block;font-size:14px;font-weight:600;color:var(--mute)}
+.times b{font:700 clamp(52px,15vw,84px)/1 "Barlow Condensed",sans-serif;white-space:nowrap;letter-spacing:-.01em}
+.times b i{font-style:normal;font-size:.4em;margin-left:4px;color:var(--mute)}
+.status{margin:14px 0 0;font-weight:600;font-size:17px;padding:10px 12px;border-radius:8px;background:light-dark(#f1efe8,#22342d)}
+.status.on{background:var(--blaze);color:#fff}
+.bar{position:relative;height:46px;margin-top:16px;border-radius:8px;background:var(--night);overflow:hidden}
+.bar .win{position:absolute;top:0;bottom:0;background:linear-gradient(90deg,var(--blaze),#ff8a3d 12%,#ff8a3d 88%,var(--blaze))}
+.bar .now{position:absolute;top:-2px;bottom:-2px;width:3px;background:var(--ink);box-shadow:0 0 0 2px var(--card)}
+.ticks{display:flex;justify-content:space-between;font-size:13px;color:var(--mute);margin-top:4px}
+.note{font-size:14px;color:var(--mute);margin-top:10px}
+h2{font:700 24px/1.1 "Barlow Condensed",sans-serif;margin:30px 0 10px}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th,td{padding:10px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th{font-size:13px;color:var(--mute);font-weight:600}
+th:first-child,td:first-child{text-align:left}
+tr.sel td{background:light-dark(#fff1e6,#33261b);font-weight:600}
+tr.dst td{border-top:2px dashed var(--blazeInk)}
+.fine{font-size:14px;color:var(--mute);margin-top:28px;line-height:1.5}
+.fine a{color:var(--blazeInk)}
+@media(max-width:600px){.zones{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(prefers-reduced-motion:no-preference){.bar .win,.bar .now{transition:left .3s,width .3s}}
+</style></head><body>
+<main class="wrap">
+<h1>Wisconsin shooting hours</h1>
+<p class="sub">__YEAR__ · deer, bear, small game &amp; fall turkey</p>
+
+<div class="controls">
+  <div class="find">
+    <label for="q">Where are you hunting?</label>
+    <input id="q" type="search" autocomplete="off" placeholder="Type a city or town, or lat, long" aria-describedby="found">
+    <div class="sugg" id="sugg" role="listbox" aria-label="Matching places"></div>
+    <div class="found" id="found"></div>
+  </div>
+  <div>
+    <label id="rl">Area</label>
+    <div class="regions" id="regions" role="group" aria-labelledby="rl">
+      <button type="button" data-r="N">Northern</button><button type="button" data-r="S">Southern</button>
+    </div>
+    <div class="zonehint">Northern = Pierce, Dunn, Eau Claire, Clark, Marathon, Shawano, Oconto and Door counties and every county north of them. Southern = the rest of the state.</div>
+  </div>
+  <div>
+    <label id="zl">Shooting-hours zone</label>
+    <div class="zones" id="zones" role="group" aria-labelledby="zl"></div>
+    <div class="zonehint" id="zonehint"></div>
+  </div>
+  <div>
+    <label for="date">Date</label>
+    <div class="daterow">
+      <button class="btn" id="prev" aria-label="Previous day">‹</button>
+      <input type="date" id="date" min="__YEAR__-01-01" max="__YEAR__-12-31">
+      <button class="btn" id="next" aria-label="Next day">›</button>
+      <button class="btn" id="today">Today</button>
+    </div>
+  </div>
+</div>
+
+<section class="tag" aria-live="polite">
+  <p class="day" id="dayname"></p>
+  <div class="times">
+    <div><span>Opens</span><b id="open"></b></div>
+    <div><span>Closes</span><b id="close"></b></div>
+  </div>
+  <div class="bar" id="bar"><div class="win" id="win"></div><div class="now" id="now" hidden></div></div>
+  <div class="ticks"><span>4a</span><span>7a</span><span>10a</span><span>1p</span><span>4p</span><span>7p</span><span>10p</span></div>
+  <p class="status" id="status"></p>
+  <p class="note" id="len"></p>
+</section>
+
+<h2>Next 14 days</h2>
+<table><thead><tr><th>Date</th><th>Opens</th><th>Closes</th></tr></thead><tbody id="rows"></tbody></table>
+
+<p class="fine"><b>Not an official Wisconsin DNR tool.</b> Times come from the DNR's __YEAR__ Northern and Southern Area shooting-hours charts for deer, bear, small game and fall turkey (30 minutes before sunrise to 20 minutes after sunset), with each zone's added minutes applied. They're local clock time, daylight saving included. Zones are set by longitude; town lookup uses ZIP-code town centers, so it's approximate — if you hunt near a line, check the <a href="https://dnr.wisconsin.gov/topic/hunt/regulations.html">official DNR charts and zone map</a>. Waterfowl and spring turkey use different hours. Always confirm season dates and rules in the current regulations.</p>
+</main>
+<script>
+{
+const D=__DATA__;
+const ZONES=[
+ {z:'A',add:0,lon:'East of 88°',N:'Door Co., Marinette',S:'Milwaukee, Kenosha, Sheboygan, Manitowoc'},
+ {z:'B',add:4,lon:'88°–89°',N:'Shawano, Florence',S:'Waukesha, Fond du Lac, Oshkosh, Appleton'},
+ {z:'C',add:8,lon:'89°–90°',N:'Wausau, Rhinelander, Minocqua',S:'Madison, Stevens Point, Wisconsin Rapids, Portage'},
+ {z:'D',add:12,lon:'90°–91°',N:'Medford, Park Falls, Ashland',S:'Richland Center, Tomah, Black River Falls'},
+ {z:'E',add:16,lon:'91°–92°',N:'Eau Claire, Chippewa Falls, Rice Lake, Menomonie',S:'La Crosse, Prairie du Chien, Alma'},
+ {z:'F',add:20,lon:'West of 92°',N:'Hudson, River Falls, Superior, Siren',S:'far western Pepin Co.'}];
+let region='N';
+const PLACES=__PLACES__;
+const NORTH=new Set(['Pierce','Dunn','Eau Claire','Clark','Marathon','Shawano','Oconto','Door','Burnett','Washburn','Sawyer','Price','Vilas','Oneida','Forest','Florence','Marinette','Langlade','Lincoln','Taylor','Rusk','Barron','Polk','St. Croix','Chippewa','Douglas','Bayfield','Ashland','Iron','Menominee']);
+const $=id=>document.getElementById(id);
+let zone='E';
+try{const s=localStorage.getItem('wiZone');if(s&&ZONES.some(z=>z.z===s))zone=s;const r=localStorage.getItem('wiRegion');if(r==='N'||r==='S')region=r}catch(e){}
+const chi=()=>{const p=Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone:'America/Chicago',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date()).map(x=>[x.type,x.value]));return{iso:`${p.year}-${p.month}-${p.day}`,min:(+p.hour)*60+(+p.minute)}};
+const clampIso=iso=>iso<'__YEAR__-01-01'?'__YEAR__-01-01':iso>'__YEAR__-12-31'?'__YEAR__-12-31':iso;
+const fmt=m=>{let h=Math.floor(m/60),mm=m%60,ap=h>=12?'PM':'AM';h=h%12||12;return `${h}:${String(mm).padStart(2,'0')}`+`<i>${ap}</i>`};
+const plain=m=>fmt(m).replace(/<i>(\w+)<\/i>/,' $1');
+const hm=m=>{const h=Math.floor(m/60),mm=m%60;return (h?h+' hr ':'')+(mm||!h?mm+' min':'')};
+const get=iso=>{const [y,mo,d]=iso.split('-').map(Number);const r=D[region][mo-1]?.[d-1];if(!r)return null;const add=ZONES.find(z=>z.z===zone).add;return [r[0]+add,r[1]+add]};
+const addDays=(iso,n)=>{const t=new Date(iso+'T12:00:00Z');t.setUTCDate(t.getUTCDate()+n);return t.toISOString().slice(0,10)};
+const dname=iso=>new Date(iso+'T12:00:00Z').toLocaleDateString('en-US',{timeZone:'UTC',weekday:'long',month:'long',day:'numeric',year:'numeric'});
+const sname=iso=>new Date(iso+'T12:00:00Z').toLocaleDateString('en-US',{timeZone:'UTC',weekday:'short',month:'short',day:'numeric'});
+$('date').value=clampIso(chi().iso);
+
+function renderZones(){
+  $('zones').innerHTML=ZONES.map(z=>`<button type="button" data-z="${z.z}" aria-pressed="${z.z===zone}">${z.z}<small>+${z.add} min</small></button>`).join('');
+  const Z=ZONES.find(z=>z.z===zone);
+  $('zonehint').textContent=`Zone ${Z.z}: ${Z.lon} longitude — e.g. ${Z[region]}.`;
+  for(const b of document.querySelectorAll('#regions button'))b.setAttribute('aria-pressed',b.dataset.r===region);
+}
+function render(){
+  const iso=$('date').value||clampIso(chi().iso);
+  const t=get(iso);if(!t)return;
+  const [o,c]=t;
+  $('dayname').textContent=dname(iso)+' · '+(region==='N'?'Northern':'Southern')+' Zone '+zone;
+  $('open').innerHTML=fmt(o);$('close').innerHTML=fmt(c);
+  const S=240,E=1320,pct=m=>Math.max(0,Math.min(100,(m-S)/(E-S)*100));
+  $('win').style.left=pct(o)+'%';$('win').style.width=(pct(c)-pct(o))+'%';
+  const now=chi(),isToday=now.iso===iso,n=$('now'),st=$('status');
+  n.hidden=!isToday;if(isToday)n.style.left=pct(now.min)+'%';
+  st.classList.remove('on');
+  if(!isToday){st.textContent=`Legal window: ${plain(o)} – ${plain(c)}`}
+  else if(now.min<o){st.textContent=`Not yet legal — opens in ${hm(o-now.min)}`}
+  else if(now.min<c){st.classList.add('on');st.textContent=`Legal to shoot now — closes in ${hm(c-now.min)}`}
+  else{st.textContent=`Closed for today — ended at ${plain(c)}`}
+  $('len').textContent=`${hm(c-o)} of legal shooting time.`;
+  let rows='',prev=get(addDays(iso,-1));
+  for(let i=0;i<14;i++){const d=addDays(iso,i),r=get(d);if(!r)break;
+    const dst=prev&&Math.abs(r[0]-prev[0])>30;
+    rows+=`<tr class="${i===0?'sel':''} ${dst&&i?'dst':''}"><td>${sname(d)}${dst&&i?' · clocks change':''}</td><td>${plain(r[0])}</td><td>${plain(r[1])}</td></tr>`;prev=r}
+  $('rows').innerHTML=rows;
+}
+$('zones').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;zone=b.dataset.z;$('found').innerHTML='';try{localStorage.setItem('wiZone',zone)}catch(e){}renderZones();render()});
+const norm=s=>s.toLowerCase().replace(/\bst\.?\s+/g,'saint ').replace(/\bmt\.?\s+/g,'mount ').replace(/[^a-z]/g,'');
+const NP=PLACES.map(p=>norm(p[0]));
+const zoneFor=lon=>lon<88?'A':lon<89?'B':lon<90?'C':lon<91?'D':lon<92?'E':'F';
+function choose(name,county,lat,lon,exact){
+  region=NORTH.has(county)?'N':'S';zone=zoneFor(lon);
+  try{localStorage.setItem('wiZone',zone);localStorage.setItem('wiRegion',region)}catch(e){}
+  const edge=Math.abs(lon-Math.round(lon))<0.06&&lon>87.5&&lon<92.5;
+  $('found').innerHTML=`<b>${name}</b> (${county} Co.) → ${region==='N'?'Northern':'Southern'} Area, Zone ${zone}`+
+    (edge?`<span class="warn">This is close to a zone line (${Math.round(lon)}° W). If you're hunting on the other side of it, pick that zone below.</span>`:
+     exact?'':`<span class="warn">Based on the town center. If your stand is across a zone line, pick that zone below.</span>`);
+  $('sugg').innerHTML='';renderZones();render();
+}
+function suggest(){
+  const raw=$('q').value.trim(),f=$('found');
+  const m=raw.match(/^(-?\d{2}(?:\.\d+)?)\s*[, ]\s*(-?\d{2}(?:\.\d+)?)$/);
+  if(m){let a=+m[1],b=+m[2];if(Math.abs(a)>Math.abs(b))[a,b]=[b,a];const lat=Math.abs(a),lon=Math.abs(b);
+    if(lat<42.4||lat>47.1||lon<86.7||lon>92.95){$('sugg').innerHTML='';f.textContent='Those coordinates are outside Wisconsin.';return}
+    let best=0,bd=1e9;PLACES.forEach((p,i)=>{const d=(p[2]-lat)**2+((p[3]-lon)*0.7)**2;if(d<bd){bd=d;best=i}});
+    $('sugg').innerHTML=`<button type="button" data-coord="${lat},${lon},${best}">${lat.toFixed(4)}° N, ${lon.toFixed(4)}° W<span>near ${PLACES[best][0]}</span></button>`;return}
+  const q=norm(raw);if(q.length<2){$('sugg').innerHTML='';return}
+  const hits=[];NP.forEach((n,i)=>{if(n.startsWith(q))hits.push([0,i]);else if(n.includes(q))hits.push([1,i])});
+  hits.sort((a,b)=>a[0]-b[0]||PLACES[a[1]][0].localeCompare(PLACES[b[1]][0]));
+  $('sugg').innerHTML=hits.slice(0,6).map(([,i])=>`<button type="button" role="option" data-i="${i}">${PLACES[i][0]}<span>${PLACES[i][1]} Co.</span></button>`).join('')||'<div class="found">No match — try a nearby town, or pick a zone below.</div>';
+}
+$('q').addEventListener('input',suggest);
+$('q').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('sugg').querySelector('button')?.click()}});
+$('sugg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.coord){const [lat,lon,i]=b.dataset.coord.split(',').map(Number);choose(`${lat.toFixed(4)}, -${lon.toFixed(4)}`,PLACES[i][1],lat,lon,true)}
+  else{const p=PLACES[+b.dataset.i];$('q').value=p[0];choose(p[0],p[1],p[2],p[3],false)}
+  $('q').blur()});
+$('regions').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;region=b.dataset.r;$('found').innerHTML='';try{localStorage.setItem('wiRegion',region)}catch(e){}renderZones();render()});
+$('date').addEventListener('change',render);
+$('prev').addEventListener('click',()=>{$('date').value=clampIso(addDays($('date').value,-1));render()});
+$('next').addEventListener('click',()=>{$('date').value=clampIso(addDays($('date').value,1));render()});
+$('today').addEventListener('click',()=>{$('date').value=clampIso(chi().iso);render()});
+setInterval(render,30000);
+renderZones();render();
+}
+</script>
+</body></html>
