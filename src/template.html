@@ -179,8 +179,8 @@ let kind='big';
 const PLACES=__PLACES__;
 const NORTH=new Set(['Pierce','Dunn','Eau Claire','Clark','Marathon','Shawano','Oconto','Door','Burnett','Washburn','Sawyer','Price','Vilas','Oneida','Forest','Florence','Marinette','Langlade','Lincoln','Taylor','Rusk','Barron','Polk','St. Croix','Chippewa','Douglas','Bayfield','Ashland','Iron','Menominee']);
 const $=id=>document.getElementById(id);
-let zone='E',place='',saved=false,alertOn=false;
-try{const s=localStorage.getItem('wiZone');if(s&&ZONES.some(z=>z.z===s)){zone=s;saved=true}place=localStorage.getItem('wiPlace')||'';alertOn=localStorage.getItem('wiAlert')==='1';const r=localStorage.getItem('wiRegion');if(r==='N'||r==='S')region=r;const k=localStorage.getItem('wiKind');if(k in KINDS)kind=k}catch(e){}
+let zone='E',place='',saved=false,alertOn=false,wantAlert=false;
+try{const s=localStorage.getItem('wiZone');if(s&&ZONES.some(z=>z.z===s)){zone=s;saved=true}place=localStorage.getItem('wiPlace')||'';alertOn=localStorage.getItem('wiAlert')==='1';wantAlert=localStorage.getItem('wiAlert')==='want';const r=localStorage.getItem('wiRegion');if(r==='N'||r==='S')region=r;const k=localStorage.getItem('wiKind');if(k in KINDS)kind=k}catch(e){}
 const chi=()=>{const p=Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone:'America/Chicago',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).formatToParts(new Date()).map(x=>[x.type,x.value]));return{iso:`${p.year}-${p.month}-${p.day}`,min:(+p.hour)*60+(+p.minute),sec:(+p.hour)*3600+(+p.minute)*60+(+p.second)}};
 // Chicago UTC offset in hours at a given instant (-6 CST, -5 CDT), for countdowns that cross a DST change overnight.
 const chiOff=d=>+(new Intl.DateTimeFormat('en-US',{timeZone:'America/Chicago',timeZoneName:'shortOffset'}).formatToParts(d).find(x=>x.type==='timeZoneName').value.replace('GMT','')||0);
@@ -216,16 +216,16 @@ function notify(title,body){
   const sw=navigator.serviceWorker;
   (sw?sw.getRegistration():Promise.resolve()).then(r=>r?r.showNotification(title,o):new Notification(title,o)).catch(()=>{try{new Notification(title,o)}catch(e){}});
 }
-function setAlert(on){alertOn=on;$('alertsw').setAttribute('aria-checked',on);$('swlbl').textContent=on?'Alert on':'Notify me';try{localStorage.setItem('wiAlert',on?'1':'0')}catch(e){}}
+function setAlert(on){alertOn=on;wantAlert=false;$('alertsw').setAttribute('aria-checked',on);$('swlbl').textContent=on?'Alert on':'Notify me';try{localStorage.setItem('wiAlert',on?'1':'0')}catch(e){}}
 const isIOS=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
 const installed=navigator.standalone===true||matchMedia('(display-mode: standalone)').matches;
 const SHARE='<svg class="ico" width="20" height="22" viewBox="0 0 20 22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="Share"><path d="M10 14V2M6 6l4-4 4 4"/><path d="M6 9H3v11h14V9h-3"/></svg>';
 // Step-by-step help when alerts can't be turned on (web pages can't open the phone's Settings app themselves).
 const HELP={
  install:['Add WI Hours to your Home Screen',[`Tap the Share button ${SHARE} (bottom of Safari, or by the address bar in Chrome).`,'Scroll down, tap <b>Add to Home Screen</b>, then <b>Add</b>.','Open <b>WI Hours</b> from your Home Screen and tap <b>Notify me</b>.'],
-   'iPhones only allow website alerts from Home Screen apps (iOS 16.4 or later). You’ll set your area and zone once more in the app.'],
- iosBlocked:['Turn on notifications for WI Hours',['Open the <b>Settings</b> app.','Tap <b>Notifications</b>, then <b>WI Hours</b>.','Turn on <b>Allow Notifications</b>, come back, and tap <b>Notify me</b> again.'],
-   'iPhones don’t let websites open Settings for you.'],
+   'iPhones only allow website alerts from Home Screen apps (iOS 16.4 or later). Already added it? Open it from the icon, not Safari. If you added it before the site moved to wishootinghours.com, delete that icon and add it again.'],
+ iosBlocked:['Turn on notifications for WI Hours',['Open the <b>Settings</b> app.','Tap <b>Notifications</b>, then <b>WI Hours</b>.','Turn on <b>Allow Notifications</b>.','Close WI Hours fully (swipe up from the bottom and flick it away), then open it again from the icon.'],
+   'Already on? Do step 4 anyway: iPhones may only notice the change after the app restarts. The switch turns on by itself once alerts are allowed.'],
  oldIOS:['Update your iPhone',['Alerts need iOS 16.4 or later. Open <b>Settings</b> → <b>General</b> → <b>Software Update</b>.'],''],
  blocked:['Allow notifications for this site',['Tap the icon at the left of the address bar (a lock or sliders).','Tap <b>Permissions</b> or <b>Site settings</b> → <b>Notifications</b> → <b>Allow</b>.','Reload the page and tap <b>Notify me</b> again.'],
    'Installed as an app? Long-press its icon → App info → Notifications.']};
@@ -240,7 +240,7 @@ async function toggleAlert(){
     setAlert(true);note('Alert on (vibrate only). Keep this page open.');return}
   let p=Notification.permission;
   if(p==='default'){try{p=await Notification.requestPermission()}catch(e){}}
-  if(p!=='granted'){help(isIOS?'iosBlocked':'blocked');return}
+  if(p!=='granted'){wantAlert=true;try{localStorage.setItem('wiAlert','want')}catch(e){}help(isIOS?'iosBlocked':'blocked');return}
   setAlert(true);note('Alert on. Keep this page open — the screen can lock.');
 }
 function tick(){
@@ -343,7 +343,10 @@ $('spotbtn').addEventListener('click',()=>setOpen($('settings').hidden));
 $('done').addEventListener('click',()=>{setOpen(false);$('spotbtn').scrollIntoView({block:'nearest'})});
 $('date').addEventListener('click',e=>{try{e.target.showPicker()}catch(_){}});
 setOpen(!saved);
-setAlert(alertOn&&(!('Notification' in window)||Notification.permission==='granted'));
+{const w=wantAlert;setAlert(alertOn&&(!('Notification' in window)||Notification.permission==='granted'));if(w){wantAlert=true;try{localStorage.setItem('wiAlert','want')}catch(e){}}}
+// User asked for alerts but they were blocked: turn on as soon as they're allowed (checked on launch and when the app comes back to the front).
+function recheck(){if(wantAlert&&!alertOn&&'Notification' in window&&Notification.permission==='granted'){setAlert(true);note('Alert on. Keep this page open — the screen can lock.')}}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)recheck()});recheck();
 $('alertsw').addEventListener('click',toggleAlert);
 $('helpok').addEventListener('click',()=>$('help').close());
 if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
