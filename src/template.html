@@ -70,6 +70,8 @@ tr.dst td{border-top:2px dashed var(--blazeInk)}
 .spot .chg{color:var(--blazeInk);font-weight:600;white-space:nowrap}
 .regions button small{display:block;font:500 13px/1.2 Barlow,sans-serif;opacity:.75;margin-top:2px}
 .done{width:100%}
+.addhome{width:100%;display:flex;align-items:center;gap:12px;text-align:left;min-height:64px;margin-top:24px;padding:10px 14px;line-height:1.25}
+.addhome img{border-radius:9px;flex:none}.addhome small{display:block;font-weight:500;font-size:14px;color:var(--mute)}
 .dayrow{display:flex;align-items:center;gap:8px;margin:0 0 12px}
 .nav{font-size:24px;line-height:1}
 .dpick{position:relative;flex:1;min-height:48px;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:17px;border-radius:10px;text-align:center}
@@ -159,6 +161,7 @@ tr.dst td{border-top:2px dashed var(--blazeInk)}
 
 <h2>Next 14 days</h2>
 <table><thead><tr><th>Date</th><th>Opens</th><th>Closes</th></tr></thead><tbody id="rows"></tbody></table>
+<button type="button" class="btn addhome" id="addhome" hidden><img src="icons/icon-180.png" width="40" height="40" alt=""><span>Add to your Home Screen<small>Opens like an app, one tap from your phone</small></span></button>
 
 <p class="fine"><b>Not an official Wisconsin DNR tool.</b> Times come from the DNR's __YEAR__ Northern and Southern Area shooting-hours charts: deer, bear, small game and fall turkey (30 minutes before sunrise to 20 minutes after sunset), and waterfowl and spring turkey (30 minutes before sunrise to sunset), with each zone's added minutes applied. They're local clock time, daylight saving included. Zones are set by longitude; town lookup uses ZIP-code town centers, so it's approximate — if you hunt near a line, check the <a href="https://dnr.wisconsin.gov/topic/hunt/regulations.html">official DNR charts and zone map</a>. Some seasons and opening days have their own special hours. Always confirm season dates and rules in the current regulations.</p>
 </main>
@@ -227,6 +230,11 @@ const HELP={
  iosBlocked:['Turn on notifications for WI Hours',['Open the <b>Settings</b> app.','Tap <b>Notifications</b>, then <b>WI Hours</b>.','Turn on <b>Allow Notifications</b>.','Close WI Hours fully (swipe up from the bottom and flick it away), then open it again from the icon.'],
    'Already on? Do step 4 anyway: iPhones may only notice the change after the app restarts. The switch turns on by itself once alerts are allowed.'],
  oldIOS:['Update your iPhone',['Alerts need iOS 16.4 or later. Open <b>Settings</b> → <b>General</b> → <b>Software Update</b>.'],''],
+ addIOS:['Add WI Hours to your Home Screen',[`Open this page in <b>Safari</b> and tap the Share button ${SHARE} (bottom of the screen; top right on iPad). In Chrome, it’s by the address bar.`,'Scroll down and tap <b>Add to Home Screen</b>, then <b>Add</b>.','Open <b>WI Hours</b> from the new icon.'],
+   'It opens full screen like an app. You’ll set your spot once more in it. It’s also needed for alerts on iPhone.'],
+ addAndroid:['Add WI Hours to your Home Screen',['In <b>Chrome</b>, tap the <b>⋮</b> menu (top right).','Tap <b>Add to Home screen</b> or <b>Install app</b>, then <b>Install</b>.','Open <b>WI Hours</b> from the new icon.'],
+   'Samsung Internet: tap the ☰ menu → Add page to → Home screen.'],
+ addOther:['Add WI Hours to your phone',[`<b>iPhone:</b> in Safari, tap Share ${SHARE} → <b>Add to Home Screen</b>.`,'<b>Android:</b> in Chrome, tap <b>⋮</b> → <b>Add to Home screen</b>.','<b>Computer:</b> in Chrome or Edge, click the install icon at the right of the address bar.'],''],
  blocked:['Allow notifications for this site',['Tap the icon at the left of the address bar (a lock or sliders).','Tap <b>Permissions</b> or <b>Site settings</b> → <b>Notifications</b> → <b>Allow</b>.','Reload the page and tap <b>Notify me</b> again.'],
    'Installed as an app? Long-press its icon → App info → Notifications.']};
 function help(k){const [title,steps,nt]=HELP[k],d=$('help');
@@ -349,6 +357,12 @@ function recheck(){if(wantAlert&&!alertOn&&'Notification' in window&&Notificatio
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)recheck()});recheck();
 $('alertsw').addEventListener('click',toggleAlert);
 $('helpok').addEventListener('click',()=>$('help').close());
+// Home Screen button: Chrome/Android's own install prompt when offered, otherwise step-by-step help. Hidden once installed.
+let installEvt=null;
+if(!installed)$('addhome').hidden=false;
+addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e});
+addEventListener('appinstalled',()=>{$('addhome').hidden=true});
+$('addhome').addEventListener('click',()=>{if(installEvt){installEvt.prompt();installEvt=null;return}help(isIOS?'addIOS':/Android/i.test(navigator.userAgent)?'addAndroid':'addOther')});
 if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
 setInterval(render,30000);setInterval(tick,1000);
 renderZones();render();
