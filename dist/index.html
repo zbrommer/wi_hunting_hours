@@ -71,7 +71,12 @@ tr.dst td{border-top:2px dashed var(--blazeInk)}
 .regions button small{display:block;font:500 13px/1.2 Barlow,sans-serif;opacity:.75;margin-top:2px}
 .done{width:100%}
 .addhome{width:100%;display:flex;align-items:center;gap:12px;text-align:left;min-height:64px;margin-top:24px;padding:10px 14px;line-height:1.25}
-.addhome img{border-radius:9px;flex:none}.addhome small{display:block;font-weight:500;font-size:14px;color:var(--mute)}
+.addhome img{border-radius:9px;flex:none}
+/* Top banner pushing new visitors to install; ✕ hides it for 30 days (localStorage wiPromo) */
+.promo{display:flex;align-items:center;gap:12px;margin:0 0 14px;padding:10px 6px 10px 12px;border-radius:12px;background:var(--night);color:#fff;border-left:6px solid var(--blaze);line-height:1.25}
+.promo img{border-radius:10px;flex:none}.promo-t{flex:1}.promo-t b{display:block;font-size:16px}.promo-t small{display:block;font-size:14px;opacity:.85;margin-top:2px}
+.promo .go{min-height:44px;padding:0 16px;border:0;border-radius:10px;background:var(--blaze);color:#fff;font:700 16px Barlow,sans-serif;cursor:pointer}
+.promo .x{min-width:40px;min-height:44px;border:0;background:none;color:#fff;opacity:.75;font-size:20px;cursor:pointer}.addhome small{display:block;font-weight:500;font-size:14px;color:var(--mute)}
 .dayrow{display:flex;align-items:center;gap:8px;margin:0 0 12px}
 .nav{font-size:24px;line-height:1}
 .dpick{position:relative;flex:1;min-height:48px;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:17px;border-radius:10px;text-align:center}
@@ -105,6 +110,7 @@ tr.dst td{border-top:2px dashed var(--blazeInk)}
 <main class="wrap">
 <h1>Wisconsin shooting hours</h1>
 <p class="sub">2026 · deer, bear, small game, turkey &amp; waterfowl</p>
+<div class="promo" id="promo" hidden><img src="icons/icon-180.png" width="44" height="44" alt=""><span class="promo-t"><b>Put WI Hours on your Home Screen</b><small>One tap to today’s hours, like an app</small></span><button type="button" class="go" id="promogo">Add</button><button type="button" class="x" id="promox" aria-label="Not now">✕</button></div>
 
 <section class="spotbox" id="spotbox" aria-label="Your spot settings">
 <button type="button" class="spot" id="spotbtn" aria-expanded="false" aria-controls="settings">
@@ -360,9 +366,12 @@ $('helpok').addEventListener('click',()=>$('help').close());
 // Home Screen button: Chrome/Android's own install prompt when offered, otherwise step-by-step help. Hidden once installed.
 let installEvt=null;
 if(!installed)$('addhome').hidden=false;
+try{if(!installed&&!(Date.now()-(+localStorage.getItem('wiPromo')||0)<30*864e5))$('promo').hidden=false}catch(e){}
+$('promox').addEventListener('click',()=>{$('promo').hidden=true;try{localStorage.setItem('wiPromo',Date.now())}catch(e){}});
 addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e});
-addEventListener('appinstalled',()=>{$('addhome').hidden=true});
-$('addhome').addEventListener('click',()=>{if(installEvt){installEvt.prompt();installEvt=null;return}help(isIOS?'addIOS':/Android/i.test(navigator.userAgent)?'addAndroid':'addOther')});
+addEventListener('appinstalled',()=>{$('addhome').hidden=$('promo').hidden=true});
+function addHome(){if(installEvt){installEvt.prompt();installEvt=null;return}help(isIOS?'addIOS':/Android/i.test(navigator.userAgent)?'addAndroid':'addOther')}
+$('addhome').addEventListener('click',addHome);$('promogo').addEventListener('click',addHome);
 if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
 setInterval(render,30000);setInterval(tick,1000);
 renderZones();render();
