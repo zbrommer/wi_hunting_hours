@@ -22,7 +22,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Barlow,system-
 h1{font:700 clamp(28px,6vw,40px)/1.05 "Barlow Condensed",sans-serif;margin:0 0 4px;text-wrap:balance}
 .sub{color:var(--mute);margin:0 0 18px;font-size:15px}
 label{display:block;font-weight:600;font-size:14px;margin-bottom:6px}
-.controls{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;margin-bottom:18px}
+.controls{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;padding:16px 14px 14px}
 .zones{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
 .zones button{min-height:52px;border:2px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;font:700 20px/1 "Barlow Condensed",sans-serif;cursor:pointer}
 .zones button small{display:block;font:500 12px/1.2 Barlow,sans-serif;color:var(--mute);margin-top:3px}
@@ -58,7 +58,14 @@ tr.sel td{background:light-dark(#fff1e6,#33261b);font-weight:600}
 tr.dst td{border-top:2px dashed var(--blazeInk)}
 .fine{font-size:14px;color:var(--mute);margin-top:28px;line-height:1.5}
 .fine a{color:var(--blazeInk)}
-.spot{width:100%;display:flex;justify-content:space-between;align-items:center;gap:12px;text-align:left;min-height:56px;padding:8px 14px;margin:0 0 14px;border:2px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);font:16px/1.3 Barlow,sans-serif;cursor:pointer}
+/* "Your spot" header + its settings live in one card; open = blaze outline, so it's clear which fields belong to it */
+.spotbox{margin:0 0 18px;border:2px solid var(--line);border-radius:12px;background:var(--card)}
+.spotbox.open{border-color:var(--blaze);box-shadow:0 0 0 1px var(--blaze)}
+.spotbox.open .spot{border-bottom:1px solid var(--line);border-radius:10px 10px 0 0}
+.spot .chg::after{content:"";display:inline-block;width:7px;height:7px;margin:0 2px 3px 8px;border:solid currentColor;border-width:0 2px 2px 0;transform:rotate(45deg)}
+.spotbox.open .spot .chg::after{transform:rotate(-135deg);margin-bottom:-1px}
+@media(prefers-reduced-motion:no-preference){.spotbox.open .controls{animation:drop .2s ease-out}@keyframes drop{from{opacity:0;transform:translateY(-6px)}}}
+.spot{width:100%;display:flex;justify-content:space-between;align-items:center;gap:12px;text-align:left;min-height:56px;padding:8px 14px;margin:0;border:0;border-radius:10px;background:none;color:var(--ink);font:16px/1.3 Barlow,sans-serif;cursor:pointer}
 .spot small{display:block;font-size:13px;color:var(--mute);font-weight:500}.spot b{font-weight:600}
 .spot .chg{color:var(--blazeInk);font-weight:600;white-space:nowrap}
 .regions button small{display:block;font:500 13px/1.2 Barlow,sans-serif;opacity:.75;margin-top:2px}
@@ -97,6 +104,7 @@ tr.dst td{border-top:2px dashed var(--blazeInk)}
 <h1>Wisconsin shooting hours</h1>
 <p class="sub">__YEAR__ · deer, bear, small game, turkey &amp; waterfowl</p>
 
+<section class="spotbox" id="spotbox" aria-label="Your spot settings">
 <button type="button" class="spot" id="spotbtn" aria-expanded="false" aria-controls="settings">
   <span><small>Your spot</small><b id="spotsum"></b></span><span class="chg" id="spotchg">Change</span>
 </button>
@@ -132,6 +140,7 @@ tr.dst td{border-top:2px dashed var(--blazeInk)}
   </div>
   <button type="button" class="btn done" id="done">Done</button>
 </div>
+</section>
 
 <section class="tag" aria-live="polite">
   <div class="dayrow">
@@ -195,7 +204,7 @@ function renderZones(){
   $('kindhint').textContent=`Hours run ${KINDS[kind].rule}.`;
   $('spotsum').textContent=(place?place+' · ':'')+`${region==='N'?'Northern':'Southern'} · Zone ${zone} · ${KINDS[kind].short}`;
 }
-function setOpen(o){$('settings').hidden=!o;$('spotbtn').setAttribute('aria-expanded',o);$('spotchg').textContent=o?'Close':'Change'}
+function setOpen(o){$('settings').hidden=!o;$('spotbox').classList.toggle('open',o);$('spotbtn').setAttribute('aria-expanded',o);$('spotchg').textContent=o?'Close':'Change'}
 // Sticky top bar: always today's status for the chosen area/zone/hunt type, ticking every second.
 // Optional alert when the countdown hits zero (legal light, end of hours). Static site, so it only works while the page is open.
 let last=null;
