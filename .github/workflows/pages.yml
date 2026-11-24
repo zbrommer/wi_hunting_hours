@@ -1,4 +1,6 @@
 # Publishes dist/ (the built, self-contained page) to GitHub Pages on every push to main.
+# Upload and deploy are separate jobs: with both in one job, deploy-pages sometimes
+# looked for the artifact before GitHub had registered it ("No artifacts named github-pages").
 name: Deploy to GitHub Pages
 
 on:
@@ -13,19 +15,24 @@ permissions:
 
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
+  upload:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: dist
+
   deploy:
+    needs: upload
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: dist
       - id: deployment
         uses: actions/deploy-pages@v4
