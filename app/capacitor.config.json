@@ -1,0 +1,10 @@
+{
+  "appId": "com.wishootinghours.app",
+  "appName": "WI Hours",
+  "webDir": "../dist",
+  "backgroundColor": "#13201b",
+  "ios": {
+    "contentInset": "never",
+    "backgroundColor": "#13201b"
+  }
+}

@@ -30,8 +30,9 @@ def png(size):
     chunk = lambda t, d: struct.pack(">I", len(d)) + t + d + struct.pack(">I", zlib.crc32(t + d) & 0xFFFFFFFF)
     return b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", size, size, 8, 2, 0, 0, 0)) + chunk(b"IDAT", raw) + chunk(b"IEND", b"")
 
-out = Path(__file__).resolve().parent.parent / "src" / "icons"
-out.mkdir(parents=True, exist_ok=True)
-for s in (180, 192, 512):
-    (out / f"icon-{s}.png").write_bytes(png(s))
-    print("wrote", out / f"icon-{s}.png")
+if __name__ == "__main__":  # also imported by app/ios_patch.py for the 1024px iOS icon
+    out = Path(__file__).resolve().parent.parent / "src" / "icons"
+    out.mkdir(parents=True, exist_ok=True)
+    for s in (180, 192, 512):
+        (out / f"icon-{s}.png").write_bytes(png(s))
+        print("wrote", out / f"icon-{s}.png")

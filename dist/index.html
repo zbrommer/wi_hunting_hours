@@ -100,6 +100,7 @@ tr.dst td{border-top:2px dashed var(--blazeInk)}
 .sw .knob::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left .2s}
 .sw[aria-checked=true] .knob{background:#fff}.sw[aria-checked=true] .knob::after{left:19px;background:var(--night)}
 @media(max-width:600px){.zones{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.app .topbar{padding-top:env(safe-area-inset-top)}
 @media(prefers-reduced-motion:no-preference){.bar .win,.bar .now{transition:left .3s,width .3s}}
 </style></head><body>
 <div class="topbar" id="topbar" role="timer" aria-label="Today's shooting hours countdown" hidden>
@@ -225,9 +226,14 @@ function notify(title,body){
   const sw=navigator.serviceWorker;
   (sw?sw.getRegistration():Promise.resolve()).then(r=>r?r.showNotification(title,o):new Notification(title,o)).catch(()=>{try{new Notification(title,o)}catch(e){}});
 }
-function setAlert(on){alertOn=on;wantAlert=false;$('alertsw').setAttribute('aria-checked',on);$('swlbl').textContent=on?'Alert on':'Notify me';try{localStorage.setItem('wiAlert',on?'1':'0')}catch(e){}}
+function setAlert(on){alertOn=on;wantAlert=false;$('alertsw').setAttribute('aria-checked',on);$('swlbl').textContent=on?'Alert on':'Notify me';try{localStorage.setItem('wiAlert',on?'1':'0')}catch(e){}natSync()}
 const isIOS=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
-const installed=navigator.standalone===true||matchMedia('(display-mode: standalone)').matches;
+// iOS app (Capacitor shell, see app/): alerts are scheduled on the phone, so they fire even when the app is closed.
+const CAP=window.Capacitor,NATIVE=!!CAP?.isNativePlatform?.();
+const natCall=(m,o={})=>{const P=CAP.Plugins?.LocalNotifications;return P?.[m]?P[m](o):CAP.nativePromise('LocalNotifications',m,o)};
+if(NATIVE){document.documentElement.classList.add('app');document.querySelector('meta[name=viewport]').content+=',viewport-fit=cover'}
+const ONMSG=NATIVE?'Alert on. It works even when the app is closed.':'Alert on. Keep this page open — the screen can lock.';
+const installed=NATIVE||navigator.standalone===true||matchMedia('(display-mode: standalone)').matches;
 const SHARE='<svg class="ico" width="20" height="22" viewBox="0 0 20 22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="Share"><path d="M10 14V2M6 6l4-4 4 4"/><path d="M6 9H3v11h14V9h-3"/></svg>';
 // Step-by-step help when alerts can't be turned on (web pages can't open the phone's Settings app themselves).
 const HELP={
@@ -241,6 +247,8 @@ const HELP={
  addAndroid:['Add WI Hours to your Home Screen',['In <b>Chrome</b>, tap the <b>⋮</b> menu (top right).','Tap <b>Add to Home screen</b> or <b>Install app</b>, then <b>Install</b>.','Open <b>WI Hours</b> from the new icon.'],
    'Samsung Internet: tap the ☰ menu → Add page to → Home screen.'],
  addOther:['Add WI Hours to your phone',[`<b>iPhone:</b> in Safari, tap Share ${SHARE} → <b>Add to Home Screen</b>.`,'<b>Android:</b> in Chrome, tap <b>⋮</b> → <b>Add to Home screen</b>.','<b>Computer:</b> in Chrome or Edge, click the install icon at the right of the address bar.'],''],
+ appBlocked:['Turn on notifications for WI Hours',['Open the <b>Settings</b> app.','Tap <b>Apps</b> → <b>WI Hours</b> → <b>Notifications</b> (older iPhones: <b>Notifications</b> → <b>WI Hours</b>).','Turn on <b>Allow Notifications</b>, then come back here.'],
+   'The switch turns on by itself once alerts are allowed.'],
  blocked:['Allow notifications for this site',['Tap the icon at the left of the address bar (a lock or sliders).','Tap <b>Permissions</b> or <b>Site settings</b> → <b>Notifications</b> → <b>Allow</b>.','Reload the page and tap <b>Notify me</b> again.'],
    'Installed as an app? Long-press its icon → App info → Notifications.']};
 function help(k){const [title,steps,nt]=HELP[k],d=$('help');
@@ -248,6 +256,9 @@ function help(k){const [title,steps,nt]=HELP[k],d=$('help');
   $('helpt').textContent=title;$('helpsteps').innerHTML=steps.map(s=>`<li>${s}</li>`).join('');$('helpnote').textContent=nt;d.showModal()}
 async function toggleAlert(){
   if(alertOn){setAlert(false);note('Alert off.');return}
+  if(NATIVE){let p;try{p=(await natCall('checkPermissions')).display;if(p!=='granted'&&p!=='denied')p=(await natCall('requestPermissions')).display}catch(e){}
+    if(p!=='granted'){wantAlert=true;try{localStorage.setItem('wiAlert','want')}catch(e){}help('appBlocked');return}
+    setAlert(true);note(ONMSG);return}
   if(!('Notification' in window)){
     if(isIOS){help(installed?'oldIOS':'install');return}
     if(!navigator.vibrate){note('This browser can’t show alerts.');return}
@@ -255,7 +266,28 @@ async function toggleAlert(){
   let p=Notification.permission;
   if(p==='default'){try{p=await Notification.requestPermission()}catch(e){}}
   if(p!=='granted'){wantAlert=true;try{localStorage.setItem('wiAlert','want')}catch(e){}help(isIOS?'iosBlocked':'blocked');return}
-  setAlert(true);note('Alert on. Keep this page open — the screen can lock.');
+  setAlert(true);note(ONMSG);
+}
+// iOS app: keep the next 30 days of alerts scheduled on the phone (iOS holds at most 64). Redone when the spot,
+// the switch or the day changes; the app has to be opened now and then to roll the window forward.
+let natKey='',natQ=Promise.resolve();
+function natSync(){
+  if(!NATIVE)return;
+  const today=chi().iso,key=[alertOn,today,kind,region,zone].join();if(key===natKey)return;natKey=key;
+  const where=`${region==='N'?'Northern':'Southern'} Zone ${zone} · ${KINDS[kind].short}`,on=alertOn;
+  natQ=natQ.then(async()=>{
+    const p=await natCall('getPending');
+    if(p.notifications.length)await natCall('cancel',{notifications:p.notifications.map(n=>({id:n.id}))});
+    if(!on)return;
+    const list=[],now=Date.now();
+    for(let i=0;i<30;i++){const d=addDays(today,i),t=get(d);if(!t)break;
+      const [y,mo,dd]=d.split('-').map(Number),off=chiOff(new Date(Date.UTC(y,mo-1,dd,18)));
+      const at=m=>new Date(Date.UTC(y,mo-1,dd)+m*6e4-off*36e5);
+      list.push({id:i*2+1,title:'Legal shooting light',body:`${where}. Closes ${plain(t[1])}.`,schedule:{at:at(t[0])},sound:'silence.wav'},
+                {id:i*2+2,title:'Shooting hours have ended',body:`${where}. Ended ${plain(t[1])}.`,schedule:{at:at(t[1])},sound:'silence.wav'})}
+    const due=list.filter(n=>n.schedule.at>now);
+    if(due.length)await natCall('schedule',{notifications:due});
+  }).catch(()=>{natKey=''});
 }
 function tick(){
   const now=chi(),t=get(now.iso),tb=$('topbar');
@@ -271,14 +303,14 @@ function tick(){
     else{main='Closed for today';sub=`Ended at ${plain(c)} · ${where}`}}
   tb.classList.toggle('on',on);$('tbmain').textContent=main;$('tbsub').textContent=sub;
   const phase=s<o*60?0:s<c*60?1:2,key=now.iso+kind+region+zone;
-  if(alertOn&&last&&last.key===key&&phase>last.phase){
+  if(alertOn&&!NATIVE&&last&&last.key===key&&phase>last.phase){
     const at=(phase===1?o:c)*60;
     if(s-at<600){phase===1?notify('Legal shooting light',`${where}. Closes ${plain(c)}.`)
                            :notify('Shooting hours have ended',`${where}. Ended ${plain(c)}.`)}}
   last={key,phase};
 }
 function render(){
-  tick();
+  tick();natSync();
   const iso=$('date').value||clampIso(chi().iso);
   const t=get(iso);if(!t)return;
   const [o,c]=t;
@@ -359,7 +391,12 @@ $('date').addEventListener('click',e=>{try{e.target.showPicker()}catch(_){}});
 setOpen(!saved);
 {const w=wantAlert;setAlert(alertOn&&(!('Notification' in window)||Notification.permission==='granted'));if(w){wantAlert=true;try{localStorage.setItem('wiAlert','want')}catch(e){}}}
 // User asked for alerts but they were blocked: turn on as soon as they're allowed (checked on launch and when the app comes back to the front).
-function recheck(){if(wantAlert&&!alertOn&&'Notification' in window&&Notification.permission==='granted'){setAlert(true);note('Alert on. Keep this page open — the screen can lock.')}}
+async function recheck(){
+  if(!wantAlert||alertOn)return;
+  const ok=NATIVE?(await natCall('checkPermissions').catch(()=>({}))).display==='granted':'Notification' in window&&Notification.permission==='granted';
+  if(ok){setAlert(true);note(ONMSG)}}
+// iOS app: alerts were on but notifications have since been turned off in Settings.
+if(NATIVE&&alertOn)natCall('checkPermissions').then(p=>{if(p.display!=='granted'){setAlert(false);wantAlert=true;try{localStorage.setItem('wiAlert','want')}catch(e){}}}).catch(()=>{});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)recheck()});recheck();
 $('alertsw').addEventListener('click',toggleAlert);
 $('helpok').addEventListener('click',()=>$('help').close());

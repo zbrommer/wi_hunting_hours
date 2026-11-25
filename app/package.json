@@ -1,0 +1,11 @@
+{
+  "name": "wi-hours-app",
+  "private": true,
+  "description": "iOS app shell (Capacitor) around ../dist. The ios/ project is generated in CI by .github/workflows/ios.yml.",
+  "dependencies": {
+    "@capacitor/cli": "^8.0.0",
+    "@capacitor/core": "^8.0.0",
+    "@capacitor/ios": "^8.0.0",
+    "@capacitor/local-notifications": "^8.0.0"
+  }
+}
