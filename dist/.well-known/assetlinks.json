@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.wishootinghours.twa",
+        "sha256_cert_fingerprints": ["7B:AC:C4:C4:07:F0:59:09:50:D2:0B:1D:8D:AF:A4:5A:9C:85:9C:1C:ED:48:6D:47:B1:F1:E7:C8:39:36:B2:2D"]
+      }
+    }]

@@ -8,7 +8,7 @@ import argparse, calendar, collections, json, re, shutil, sys
 from pathlib import Path
 
 ROOT = Path(__file__).parent
-STATIC = ["sw.js", "manifest.webmanifest", "privacy.html", "icons/icon-180.png", "icons/icon-192.png", "icons/icon-512.png"]
+STATIC = ["sw.js", "manifest.webmanifest", "privacy.html", ".well-known/assetlinks.json", "icons/icon-180.png", "icons/icon-192.png", "icons/icon-512.png"]
 MDAYS = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]  # Feb is set from --year in main()
 
 # Chart kinds: key in the page data -> PDF file name part. Both use the same zones/offsets.
