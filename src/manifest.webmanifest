@@ -1,13 +1,30 @@
 {
+  "id": "./",
   "name": "WI Shooting Hours",
   "short_name": "WI Hours",
+  "description": "Legal shooting hours for Wisconsin deer, bear, small game, turkey and waterfowl, with a live countdown for your zone.",
+  "categories": [
+    "sports",
+    "utilities"
+  ],
+  "lang": "en-US",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "background_color": "#13201b",
   "theme_color": "#13201b",
   "icons": [
-    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
-    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
   ]
 }
