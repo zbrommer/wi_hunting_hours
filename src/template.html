@@ -418,7 +418,12 @@ renderZones();render();
      The iOS app runs at capacitor://localhost, where count.js refuses to count and WebKit can drop
      its sendBeacon silently, so the app sends one plain image hit instead, counted as path /ios-app. -->
 <script>
-if(NATIVE)new Image().src='https://wishootinghours.goatcounter.com/count?p=%2Fios-app&t='+encodeURIComponent(document.title)+'&s='+screen.width+'&b=0&rnd='+Math.random().toString(36).slice(2,7);
+// Own Capacitor check: the main script is wrapped in { } so its NATIVE/CAP aren't visible here.
+{const C=window.Capacitor;if(C?.isNativePlatform?.()){
+  const u='https://wishootinghours.goatcounter.com/count?p=%2Fios-app&t='+encodeURIComponent(document.title)+'&s='+screen.width+'&b=0&rnd='+Math.random().toString(36).slice(2,7);
+  // Native request (CapacitorHttp) so the web view can't block it; image hit as a fallback.
+  Promise.resolve().then(()=>C.nativePromise('CapacitorHttp','request',{url:u,method:'GET'})).catch(()=>{new Image().src=u});
+}}
 </script>
 <script data-goatcounter="https://wishootinghours.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </body></html>
