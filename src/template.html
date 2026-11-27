@@ -415,7 +415,10 @@ renderZones();render();
 }
 </script>
 <!-- Visit counts: GoatCounter (no cookies, no personal data). Skips localhost/file automatically.
-     The iOS app runs at capacitor://localhost, so it's allowed there and counted as path /ios-app. -->
-<script>if(NATIVE)window.goatcounter={allow_local:true,path:()=>'/ios-app'}</script>
+     The iOS app runs at capacitor://localhost, where count.js refuses to count and WebKit can drop
+     its sendBeacon silently, so the app sends one plain image hit instead, counted as path /ios-app. -->
+<script>
+if(NATIVE)new Image().src='https://wishootinghours.goatcounter.com/count?p=%2Fios-app&t='+encodeURIComponent(document.title)+'&s='+screen.width+'&b=0&rnd='+Math.random().toString(36).slice(2,7);
+</script>
 <script data-goatcounter="https://wishootinghours.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </body></html>
