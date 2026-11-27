@@ -414,6 +414,8 @@ setInterval(render,30000);setInterval(tick,1000);
 renderZones();render();
 }
 </script>
-<!-- Visit counts: GoatCounter (no cookies, no personal data). Skips localhost/file automatically. -->
+<!-- Visit counts: GoatCounter (no cookies, no personal data). Skips localhost/file automatically.
+     The iOS app runs at capacitor://localhost, so it's allowed there and counted as path /ios-app. -->
+<script>if(NATIVE)window.goatcounter={allow_local:true,path:()=>'/ios-app'}</script>
 <script data-goatcounter="https://wishootinghours.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </body></html>
